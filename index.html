@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Let's Go - Smart Travel Service Platform</title>
+    <meta name="description" content="Let's Go is a smart travel service platform offering intelligent recommendations, price comparisons, weather forecasts, travel planning, and community sharing.">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <div class="container">
+            <a href="index.html" class="navbar-brand">Let's <span class="text-primary">Go</span></a>
+            
+            <!-- Mobile menu button -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pages/recommendation.html">Recommendations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pages/price-comparison.html">Price Comparison</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pages/weather.html">Weather</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pages/travel-plan.html">Travel Plans</a></li>
+                    <li class="nav-item"><a class="nav-link" href="pages/community.html">Community</a></li>
+                </ul>
+                
+                <form class="d-flex me-2">
+                    <input type="search" class="form-control me-2" placeholder="Search destinations, hotels..." aria-label="Search">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                
+                <div class="d-flex">
+                    <a href="pages/login.html" class="btn btn-link">Login</a>
+                    <a href="pages/register.html" class="btn btn-outline-primary">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero section -->
+    <section class="hero d-flex align-items-center text-white" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('images/hero-bg-1.jpg'); background-size: cover; background-position: center; height: 80vh;">
+        <div class="container text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 animate__animated animate__fadeIn">
+                    <h1 class="display-4 fw-bold mb-4">Explore Your Next Adventure</h1>
+                    <p class="fs-5 mb-5">Smart planning, best prices, all-in-one travel service</p>
+                    <div class="mx-auto" style="max-width: 600px;">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control form-control-lg" placeholder="Enter a destination to start your journey...">
+                            <button class="btn btn-primary btn-lg" type="button" onclick="handleSearch(event)">Get Started</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features section -->
+    <section class="container py-5">
+        <h2 class="text-center mb-5">Our Core Features</h2>
+        <div class="row g-4">
+            <div class="col-md-4 col-sm-6 animate__animated animate__fadeInUp">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-lightbulb fa-2x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Smart Recommendations</h3>
+                        <p class="card-text">Get personalized recommendations for hotels, attractions, and travel routes based on your preferences.</p>
+                        <a href="pages/recommendation.html" class="btn btn-outline-primary mt-3">Explore</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 col-sm-6 animate__animated animate__fadeInUp" data-wow-delay="0.1s">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-search-dollar fa-2x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Price Comparison</h3>
+                        <p class="card-text">Compare prices across multiple platforms to find the best deals and optimal booking times.</p>
+                        <a href="pages/price-comparison.html" class="btn btn-outline-primary mt-3">Explore</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 col-sm-6 animate__animated animate__fadeInUp" data-wow-delay="0.2s">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-cloud-sun fa-2x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Weather Forecast</h3>
+                        <p class="card-text">Get accurate weather forecasts for your destination with smart recommendations for clothing and activities.</p>
+                        <a href="pages/weather.html" class="btn btn-outline-primary mt-3">Explore</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-sm-6 animate__animated animate__fadeInUp" data-wow-delay="0.3s">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-route fa-2x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Travel Planning</h3>
+                        <p class="card-text">AI-generated personalized travel plans with complete itineraries at your fingertips.</p>
+                        <a href="pages/travel-plan.html" class="btn btn-outline-primary mt-3">Explore</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-sm-6 animate__animated animate__fadeInUp" data-wow-delay="0.4s">
+                <div class="card h-100 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-users fa-2x text-primary"></i>
+                        </div>
+                        <h3 class="card-title h5">Community Sharing</h3>
+                        <p class="card-text">Share your travel experiences and get authentic tips and advice from other travelers.</p>
+                        <a href="pages/community.html" class="btn btn-outline-primary mt-3">Explore</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recommended destinations section -->
+    <section class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Recommended Destinations</h2>
+            <a href="pages/recommendation.html" class="btn btn-link text-decoration-none">View all <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="position-relative">
+            <div class="row destination-slider">
+                <!-- Destination card 1 -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm hover-card">
+                        <img src="images/tokyo.jpg" class="card-img-top" alt="Tokyo">
+                        <div class="card-body">
+                            <h3 class="card-title h5">Tokyo</h3>
+                            <p class="card-text">A metropolis where tradition meets modernity, experience the perfect blend of Japanese culture and technology.</p>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <small class="ms-2">4.8</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                            <div class="text-primary fw-bold">From $800</div>
+                            <a href="pages/destination.html?id=tokyo" class="btn btn-sm btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Destination card 2 -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm hover-card">
+                        <img src="images/kyoto.jpg" class="card-img-top" alt="Kyoto">
+                        <div class="card-body">
+                            <h3 class="card-title h5">Kyoto</h3>
+                            <p class="card-text">Japan's ancient capital with numerous historical sites and temples, experience traditional Japanese culture.</p>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <small class="ms-2">4.9</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                            <div class="text-primary fw-bold">From $650</div>
+                            <a href="pages/destination.html?id=kyoto" class="btn btn-sm btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Destination card 3 -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm hover-card">
+                        <img src="images/osaka.jpg" class="card-img-top" alt="Osaka">
+                        <div class="card-body">
+                            <h3 class="card-title h5">Osaka</h3>
+                            <p class="card-text">Japan's food capital, experience unique Kansai cuisine and vibrant atmosphere.</p>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <small class="ms-2">4.7</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                            <div class="text-primary fw-bold">From $600</div>
+                            <a href="pages/destination.html?id=osaka" class="btn btn-sm btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Destination card 4 -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm hover-card">
+                        <img src="images/hokkaido.jpg" class="card-img-top" alt="Hokkaido">
+                        <div class="card-body">
+                            <h3 class="card-title h5">Hokkaido</h3>
+                            <p class="card-text">Japan's northernmost island with unique features for each season, famous for winter skiing and hot springs.</p>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <small class="ms-2">4.8</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                            <div class="text-primary fw-bold">From $900</div>
+                            <a href="pages/destination.html?id=hokkaido" class="btn btn-sm btn-primary">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Slider navigation buttons -->
+            <button class="destination-prev position-absolute top-50 start-0 translate-middle-y btn btn-primary rounded-circle" style="width: 40px; height: 40px; z-index: 1;">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="destination-next position-absolute top-50 end-0 translate-middle-y btn btn-primary rounded-circle" style="width: 40px; height: 40px; z-index: 1;">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- Testimonials section -->
+    <section class="container py-5">
+        <h2 class="text-center mb-5">Traveler Experiences</h2>
+        <div class="row">
+            <!-- Testimonial card 1 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="images/user-1.jpg" alt="User avatar" class="rounded-circle" width="50" height="50">
+                            <div class="ms-3">
+                                <h5 class="mb-0">John Smith</h5>
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="card-text">"Let's Go helped me plan a perfect trip to Kyoto! The itinerary was very well-organized, and the price was 20% cheaper than what I found myself."</p>
+                        <img src="images/user-experience-1.jpg" class="img-fluid rounded mt-3" alt="User experience photo">
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-primary">Kyoto</span>
+                            <small class="text-muted">3 days ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Testimonial card 2 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="images/user-2.jpg" alt="User avatar" class="rounded-circle" width="50" height="50">
+                            <div class="ms-3">
+                                <h5 class="mb-0">Sarah Lee</h5>
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="card-text">"The price comparison feature is amazing! I found a great deal on a five-star hotel, and the weather forecast was spot on!"</p>
+                        <img src="images/user-experience-2.jpg" class="img-fluid rounded mt-3" alt="User experience photo">
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-primary">Tokyo</span>
+                            <small class="text-muted">1 week ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Testimonial card 3 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="images/user-3.jpg" alt="User avatar" class="rounded-circle" width="50" height="50">
+                            <div class="ms-3">
+                                <h5 class="mb-0">David Zhang</h5>
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="card-text">"The AI-generated travel plan was incredibly intelligent and matched my preferences perfectly. The recommended restaurants were authentic, not tourist traps."</p>
+                        <img src="images/user-experience-3.jpg" class="img-fluid rounded mt-3" alt="User experience photo">
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-primary">Osaka</span>
+                            <small class="text-muted">2 weeks ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Testimonial card 4 -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="images/user-4.jpg" alt="User avatar" class="rounded-circle" width="50" height="50">
+                            <div class="ms-3">
+                                <h5 class="mb-0">Emma Chen</h5>
+                                <div class="text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="card-text">"The guides shared in the community were incredibly helpful. The photos and tips from users are much more authentic than official guides!"</p>
+                        <img src="images/user-experience-4.jpg" class="img-fluid rounded mt-3" alt="User experience photo">
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-primary">Hokkaido</span>
+                            <small class="text-muted">1 month ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="pages/community.html" class="btn btn-primary">View More Experiences</a>
+        </div>
+    </section>
+
+    <!-- CTA section -->
+    <section class="bg-primary text-white py-5 my-5">
+        <div class="container text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="mb-3">Ready to Start Your Journey?</h2>
+                    <p class="mb-4">Sign up for personalized travel recommendations and exclusive offers</p>
+                    <a href="pages/register.html" class="btn btn-lg btn-light">Sign Up for Free</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h3 class="h5 mb-3">Let's <span class="text-primary">Go</span></h3>
+                    <p>Making travel simpler and smarter. We're dedicated to providing all-in-one travel services including smart recommendations, price comparisons, weather forecasts, travel planning, and community sharing.</p>
+                </div>
+                
+                <div class="col-sm-6 col-md-4 col-lg-2 mb-4">
+                    <h5 class="mb-3">Core Features</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="pages/recommendation.html" class="text-white text-decoration-none">Recommendations</a></li>
+                        <li class="mb-2"><a href="pages/price-comparison.html" class="text-white text-decoration-none">Price Comparison</a></li>
+                        <li class="mb-2"><a href="pages/weather.html" class="text-white text-decoration-none">Weather</a></li>
+                        <li class="mb-2"><a href="pages/travel-plan.html" class="text-white text-decoration-none">Travel Plans</a></li>
+                        <li class="mb-2"><a href="pages/community.html" class="text-white text-decoration-none">Community</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-sm-6 col-md-4 col-lg-2 mb-4">
+                    <h5 class="mb-3">About Us</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="pages/about.html" class="text-white text-decoration-none">Company</a></li>
+                        <li class="mb-2"><a href="pages/team.html" class="text-white text-decoration-none">Our Team</a></li>
+                        <li class="mb-2"><a href="pages/careers.html" class="text-white text-decoration-none">Careers</a></li>
+                        <li class="mb-2"><a href="pages/contact.html" class="text-white text-decoration-none">Contact Us</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-sm-6 col-md-4 col-lg-2 mb-4">
+                    <h5 class="mb-3">Help Center</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="pages/faq.html" class="text-white text-decoration-none">FAQ</a></li>
+                        <li class="mb-2"><a href="pages/guide.html" class="text-white text-decoration-none">User Guide</a></li>
+                        <li class="mb-2"><a href="pages/feedback.html" class="text-white text-decoration-none">Feedback</a></li>
+                        <li class="mb-2"><a href="pages/privacy.html" class="text-white text-decoration-none">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="pages/terms.html" class="text-white text-decoration-none">Terms of Service</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-sm-6 col-md-12 col-lg-2 mb-4">
+                    <h5 class="mb-3">Follow Us</h5>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-white" title="Facebook"><i class="fab fa-facebook-f fa-lg"></i></a>
+                        <a href="#" class="text-white" title="Twitter"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-white" title="Instagram"><i class="fab fa-instagram fa-lg"></i></a>
+                        <a href="#" class="text-white" title="Pinterest"><i class="fab fa-pinterest fa-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-top border-secondary pt-4 mt-4">
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center text-md-start">
+                        <p class="mb-md-0">&copy; 2023 Let's Go Travel Service Platform. All rights reserved.</p>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        <a href="#" class="text-white me-3 text-decoration-none">Privacy</a>
+                        <a href="#" class="text-white me-3 text-decoration-none">Terms</a>
+                        <a href="#" class="text-white text-decoration-none">Sitemap</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to top button -->
+    <button id="back-to-top" class="btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-4" style="display: none; width: 45px; height: 45px;">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Animation library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- Custom scripts -->
+    <script src="js/main.js"></script>
+</body>
+</html> 
