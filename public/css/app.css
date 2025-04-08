@@ -1,0 +1,77 @@
+/* 全局样式 */
+:root {
+    --primary-color: #ff385c;
+    --secondary-color: #212121;
+    --light-gray: #f5f5f5;
+    --medium-gray: #e0e0e0;
+    --dark-gray: #757575;
+}
+
+body {
+    font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--secondary-color);
+}
+
+/* 导航栏样式 */
+.categories-tabs-container {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+
+.categories-tabs-container::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+/* 卡片样式 */
+.post-card {
+    transition: transform 0.3s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-4px);
+}
+
+/* 动画效果 */
+@keyframes heart-beat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.heart-animation {
+    animation: heart-beat 0.6s ease;
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 底部导航栏 */
+footer a:hover {
+    color: var(--primary-color);
+}
+
+/* 加载动画 */
+.spinner {
+    border: 3px solid var(--medium-gray);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+} 
