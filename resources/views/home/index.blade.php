@@ -4,30 +4,8 @@
     <!-- 分类标签 -->
     <x-category-tabs :categories="$categories" :activeCategory="$activeCategory" />
 
-    <!-- 卡片标签页 -->
-    <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
-        <button class="px-4 py-2 font-medium text-red-500 border-b-2 border-red-500">
-            卡片1
-        </button>
-        <button class="px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">
-            卡片2
-        </button>
-        <button class="px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">
-            卡片3
-        </button>
-        <button class="px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">
-            卡片4
-        </button>
-        <button class="px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">
-            卡片5
-        </button>
-        <button class="px-4 py-2 font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700">
-            更多...
-        </button>
-    </div>
-
     <!-- 卡片网格 -->
-    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="posts-container">
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6" id="posts-container">
         @foreach($posts as $post)
             <div class="post-card">
                 <x-travel-card :post="$post" />
@@ -38,7 +16,7 @@
     <!-- 加载更多 -->
     <div class="flex justify-center mt-8">
         <button id="load-more" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-full">
-            加载更多
+            Load More
         </button>
     </div>
 @endsection
@@ -65,7 +43,7 @@
     const loadMoreBtn = document.getElementById('load-more');
     
     loadMoreBtn.addEventListener('click', function() {
-        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
+        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
         
         // 模拟AJAX请求
         setTimeout(() => {
@@ -77,9 +55,9 @@
                         // 添加新的卡片到页面上
                         // ...
                         page++;
-                        loadMoreBtn.textContent = '加载更多';
+                        loadMoreBtn.textContent = 'Load More';
                     } else {
-                        loadMoreBtn.textContent = '已加载全部内容';
+                        loadMoreBtn.textContent = 'All content loaded';
                         loadMoreBtn.disabled = true;
                     }
                 });

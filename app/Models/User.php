@@ -21,6 +21,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
+        'bio',
+        'location',
+        'education',
+        'tags',
+        'pinned_posts',
     ];
 
     /**
@@ -43,6 +49,40 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'tags' => 'array',
+            'pinned_posts' => 'array',
         ];
+    }
+    
+    /**
+     * Get user's posts
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+    
+    /**
+     * Get user's favorite posts
+     */
+    public function favorites()
+    {
+        return $this->belongsToMany(Post::class, 'favorites')->withTimestamps();
+    }
+    
+    /**
+     * Get user's followers
+     */
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id')->withTimestamps();
+    }
+    
+    /**
+     * Get users that the user is following
+     */
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')->withTimestamps();
     }
 }

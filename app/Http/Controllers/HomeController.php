@@ -2,33 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
     /**
-     * 显示首页
+     * Display the home page
      */
     public function index(Request $request)
     {
-        // 获取当前分类
+        // Get current category
         $activeCategory = $request->query('category', 'recommended');
         
-        // 模拟分类数据
+        // Mock category data
         $categories = [
-            ['name' => '推荐', 'slug' => 'recommended'],
-            ['name' => '最新', 'slug' => 'latest'],
-            ['name' => '热门', 'slug' => 'popular'],
-            ['name' => '国内游', 'slug' => 'domestic'],
-            ['name' => '海外游', 'slug' => 'overseas'],
-            ['name' => '周边游', 'slug' => 'nearby'],
-            ['name' => '特色游', 'slug' => 'special'],
-            ['name' => '自由行', 'slug' => 'independent'],
-            ['name' => '民宿', 'slug' => 'homestay'],
+            ['name' => 'Recommended', 'slug' => 'recommended'],
+            ['name' => 'Latest', 'slug' => 'latest'],
+            ['name' => 'Popular', 'slug' => 'popular'],
+            ['name' => 'Domestic', 'slug' => 'domestic'],
+            ['name' => 'Overseas', 'slug' => 'overseas'],
+            ['name' => 'Nearby', 'slug' => 'nearby'],
+            ['name' => 'Special', 'slug' => 'special'],
+            ['name' => 'Independent', 'slug' => 'independent'],
+            ['name' => 'Homestay', 'slug' => 'homestay'],
         ];
         
-        // 模拟帖子数据
-        $posts = $this->getDummyPosts();
+        // Get posts based on category
+        $posts = $this->getPostsByCategory($activeCategory);
         
         return view('home.index', [
             'activeCategory' => $activeCategory,
@@ -38,18 +39,136 @@ class HomeController extends Controller
     }
     
     /**
-     * 获取模拟帖子数据
+     * Search posts by query
+     */
+    public function search(Request $request)
+    {
+        // Get search query
+        $query = $request->input('query');
+        
+        // If no query is provided, redirect to home
+        if (empty($query)) {
+            return redirect()->route('home');
+        }
+        
+        // Get posts that match the query
+        $posts = Post::where(function($q) use ($query) {
+            $q->where('title', 'like', "%{$query}%")
+              ->orWhere('content', 'like', "%{$query}%")
+              ->orWhere('destination', 'like', "%{$query}%")
+              ->orWhere('duration', 'like', "%{$query}%");
+            
+            // Search in JSON tags field
+            $q->orWhereRaw("JSON_CONTAINS(LOWER(tags), LOWER('\"" . addslashes($query) . "\"'))");
+        })
+        ->with('user')
+        ->get()
+        ->map(function($post) {
+            // Format post data for view
+            return [
+                'id' => $post->id,
+                'title' => $post->title,
+                'cover_image' => $post->cover_image,
+                'duration' => $post->duration,
+                'cost' => $post->cost ?? null,
+                'user' => [
+                    'name' => $post->user->name,
+                    'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
+                ],
+                'views' => $post->views,
+                'likes' => $post->likes,
+                'comments' => $post->comments_count,
+            ];
+        })
+        ->toArray();
+        
+        // Mock category data for search page
+        $categories = [
+            ['name' => 'Recommended', 'slug' => 'recommended'],
+            ['name' => 'Latest', 'slug' => 'latest'],
+            ['name' => 'Popular', 'slug' => 'popular'],
+            ['name' => 'Domestic', 'slug' => 'domestic'],
+            ['name' => 'Overseas', 'slug' => 'overseas'],
+            ['name' => 'Nearby', 'slug' => 'nearby'],
+            ['name' => 'Special', 'slug' => 'special'],
+            ['name' => 'Independent', 'slug' => 'independent'],
+            ['name' => 'Homestay', 'slug' => 'homestay'],
+        ];
+        
+        return view('home.search', [
+            'query' => $query,
+            'posts' => $posts,
+            'categories' => $categories,
+            'activeCategory' => 'search-results'
+        ]);
+    }
+    
+    /**
+     * Get posts by category
+     */
+    private function getPostsByCategory($category)
+    {
+        // Check if we should use the database
+        if (config('app.use_database', false)) {
+            // Get posts from database based on category
+            $query = Post::with('user');
+            
+            switch ($category) {
+                case 'latest':
+                    $query->latest();
+                    break;
+                case 'popular':
+                    $query->orderBy('views', 'desc');
+                    break;
+                case 'domestic':
+                    $query->where('destination', 'like', '%China%');
+                    break;
+                case 'overseas':
+                    $query->where('destination', 'not like', '%China%');
+                    break;
+                // Add more categories as needed
+                default:
+                    // Default sorting for recommended
+                    $query->orderBy('likes', 'desc');
+                    break;
+            }
+            
+            // Get posts and format for view
+            return $query->limit(12)->get()->map(function($post) {
+                return [
+                    'id' => $post->id,
+                    'title' => $post->title,
+                    'cover_image' => $post->cover_image,
+                    'duration' => $post->duration,
+                    'cost' => $post->cost ?? null,
+                    'user' => [
+                        'name' => $post->user->name,
+                        'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
+                    ],
+                    'views' => $post->views,
+                    'likes' => $post->likes,
+                    'comments' => $post->comments_count,
+                ];
+            })->toArray();
+        }
+        
+        // Fallback to mock data
+        return $this->getDummyPosts();
+    }
+    
+    /**
+     * Get mock post data
      */
     private function getDummyPosts()
     {
         return [
             [
                 'id' => 1,
-                'title' => '北海道7日游',
+                'title' => 'Hokkaido 7-Day Trip',
                 'cover_image' => 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '7天6晚·12.24',
+                'duration' => '7 Days 6 Nights · 12.24',
                 'user' => [
-                    'name' => '旅行达人',
+                    'name' => 'Travel Expert',
                     'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg'
                 ],
                 'views' => 1245,
@@ -58,12 +177,12 @@ class HomeController extends Controller
             ],
             [
                 'id' => 2,
-                'title' => '新疆独库公路',
+                'title' => 'Xinjiang Duku Highway',
                 'cover_image' => 'https://images.unsplash.com/photo-1494783367193-149034c05e8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '5天·人均4k',
-                'cost' => '人均4k',
+                'duration' => '5 Days · 4k per person',
+                'cost' => '4k per person',
                 'user' => [
-                    'name' => '风之子',
+                    'name' => 'Wind Chaser',
                     'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg'
                 ],
                 'views' => 2341,
@@ -72,11 +191,11 @@ class HomeController extends Controller
             ],
             [
                 'id' => 3,
-                'title' => '巴黎博物馆之旅',
+                'title' => 'Paris Museum Tour',
                 'cover_image' => 'https://images.unsplash.com/photo-1431274172761-fca41d930114?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '10天·艺术之旅',
+                'duration' => '10 Days · Art Journey',
                 'user' => [
-                    'name' => '艺术爱好者',
+                    'name' => 'Art Enthusiast',
                     'avatar' => 'https://randomuser.me/api/portraits/women/28.jpg'
                 ],
                 'views' => 3450,
@@ -85,12 +204,12 @@ class HomeController extends Controller
             ],
             [
                 'id' => 4,
-                'title' => '云南大理洱海休闲游',
+                'title' => 'Yunnan Dali Erhai Lake Leisure Trip',
                 'cover_image' => 'https://images.unsplash.com/photo-1555217851-6141ab127fa8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '4天3晚·悠闲行',
-                'cost' => '人均2.5k',
+                'duration' => '4 Days 3 Nights · Relaxing',
+                'cost' => '2.5k per person',
                 'user' => [
-                    'name' => '慢游者',
+                    'name' => 'Slow Traveler',
                     'avatar' => 'https://randomuser.me/api/portraits/women/56.jpg'
                 ],
                 'views' => 1879,
@@ -99,11 +218,11 @@ class HomeController extends Controller
             ],
             [
                 'id' => 5,
-                'title' => '东京美食探索',
+                'title' => 'Tokyo Food Exploration',
                 'cover_image' => 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '6天·人均5k',
+                'duration' => '6 Days · 5k per person',
                 'user' => [
-                    'name' => '吃货旅行家',
+                    'name' => 'Foodie Traveler',
                     'avatar' => 'https://randomuser.me/api/portraits/men/22.jpg'
                 ],
                 'views' => 4210,
@@ -112,11 +231,11 @@ class HomeController extends Controller
             ],
             [
                 'id' => 6,
-                'title' => '泰国清迈小众玩法',
+                'title' => 'Chiang Mai Hidden Gems',
                 'cover_image' => 'https://images.unsplash.com/photo-1528181304800-259b08848526?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '5天·小众探索',
+                'duration' => '5 Days · Off the Beaten Path',
                 'user' => [
-                    'name' => '探索者',
+                    'name' => 'Explorer',
                     'avatar' => 'https://randomuser.me/api/portraits/men/76.jpg'
                 ],
                 'views' => 1567,
@@ -125,12 +244,12 @@ class HomeController extends Controller
             ],
             [
                 'id' => 7,
-                'title' => '三亚亲子度假攻略',
+                'title' => 'Sanya Family Vacation Guide',
                 'cover_image' => 'https://images.unsplash.com/photo-1540202404-a2f29016b523?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '6天5晚·亲子游',
-                'cost' => '家庭6k',
+                'duration' => '6 Days 5 Nights · Family Trip',
+                'cost' => '6k for family',
                 'user' => [
-                    'name' => '快乐妈咪',
+                    'name' => 'Happy Mom',
                     'avatar' => 'https://randomuser.me/api/portraits/women/65.jpg'
                 ],
                 'views' => 3245,
@@ -139,11 +258,11 @@ class HomeController extends Controller
             ],
             [
                 'id' => 8,
-                'title' => '西藏拉萨朝圣之旅',
+                'title' => 'Tibet Lhasa Pilgrimage',
                 'cover_image' => 'https://images.unsplash.com/photo-1461823385004-d7660947a7c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                'duration' => '8天·心灵之旅',
+                'duration' => '8 Days · Spiritual Journey',
                 'user' => [
-                    'name' => '高原行者',
+                    'name' => 'Plateau Traveler',
                     'avatar' => 'https://randomuser.me/api/portraits/men/42.jpg'
                 ],
                 'views' => 2789,
@@ -151,5 +270,47 @@ class HomeController extends Controller
                 'comments' => 94
             ]
         ];
+    }
+
+    /**
+     * Get posts by location
+     */
+    public function getPostsByLocation(Request $request)
+    {
+        $location = $request->input('location');
+        
+        if (empty($location)) {
+            return response()->json(['error' => 'Location parameter is required'], 400);
+        }
+        
+        // Get posts that match the location
+        if (config('app.use_database', false)) {
+            $posts = Post::where('destination', 'like', "%{$location}%")
+                ->with('user')
+                ->limit(10)
+                ->get()
+                ->map(function($post) {
+                    return [
+                        'id' => $post->id,
+                        'title' => $post->title,
+                        'destination' => $post->destination,
+                        'cover_image' => $post->cover_image,
+                        'views' => $post->views,
+                        'likes' => $post->likes,
+                    ];
+                });
+                
+            return response()->json($posts);
+        }
+        
+        // Mock data if database is not being used
+        $allPosts = $this->getDummyPosts();
+        
+        // Filter posts based on location
+        $filteredPosts = array_filter($allPosts, function($post) use ($location) {
+            return stripos($post['title'], $location) !== false;
+        });
+        
+        return response()->json(array_values($filteredPosts));
     }
 } 

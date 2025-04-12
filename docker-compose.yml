@@ -11,7 +11,7 @@ services:
       - "${VITE_PORT:-5173}:5173"
       - "${LARAVEL_PORT:-8000}:8000"
     volumes:
-      - .:/var/www/html
+      - ./LetsGo:/var/www/html
       - ./config/apache2/sites-available:/etc/apache2/sites-available
       - ./config/php/custom.ini:/usr/local/etc/php/conf.d/custom.ini
     depends_on:

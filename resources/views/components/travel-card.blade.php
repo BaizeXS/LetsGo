@@ -1,11 +1,13 @@
 @props(['post'])
 
 <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
-    <!-- 卡片封面图 -->
+    <!-- Cover Image -->
     <div class="relative">
-        <img src="{{ $post['cover_image'] }}" alt="{{ $post['title'] }}" class="w-full h-48 object-cover">
+        <a href="{{ route('posts.show', $post['id']) }}" class="block">
+            <img src="{{ $post['cover_image'] }}" alt="{{ $post['title'] }}" class="w-full h-48 object-cover">
+        </a>
         
-        <!-- 收藏按钮 -->
+        <!-- Favorite Button -->
         <button 
             class="absolute top-3 right-3 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2 transition-all duration-200"
             onclick="toggleFavorite(this, {{ $post['id'] }})"
@@ -14,18 +16,20 @@
         </button>
     </div>
     
-    <!-- 卡片内容 -->
+    <!-- Card Content -->
     <div class="p-4">
-        <!-- 用户信息 -->
+        <!-- User Info -->
         <div class="flex items-center mb-3">
             <img src="{{ $post['user']['avatar'] }}" alt="{{ $post['user']['name'] }}" class="w-8 h-8 rounded-full mr-2">
             <span class="text-sm text-gray-700">{{ $post['user']['name'] }}</span>
         </div>
         
-        <!-- 标题 -->
-        <h3 class="font-bold text-gray-900 mb-2">{{ $post['title'] }}</h3>
+        <!-- Title -->
+        <a href="{{ route('posts.show', $post['id']) }}" class="block">
+            <h3 class="font-bold text-gray-900 mb-2 hover:text-red-500 transition">{{ $post['title'] }}</h3>
+        </a>
         
-        <!-- 标签信息 -->
+        <!-- Tags -->
         <div class="flex items-center text-xs text-gray-500 mb-3">
             <span class="mr-3">{{ $post['duration'] }}</span>
             @if(isset($post['cost']))
@@ -33,13 +37,18 @@
             @endif
         </div>
         
-        <!-- 互动数据 -->
+        <!-- Interaction Data -->
         <div class="flex justify-between text-xs text-gray-500">
             <div class="flex space-x-3">
                 <span><i class="far fa-eye mr-1"></i>{{ $post['views'] }}</span>
                 <span><i class="far fa-heart mr-1"></i>{{ $post['likes'] }}</span>
                 <span><i class="far fa-comment mr-1"></i>{{ $post['comments'] }}</span>
             </div>
+            
+            <!-- View Details Button -->
+            <a href="{{ route('posts.show', $post['id']) }}" class="text-xs text-red-500 hover:text-red-600 transition">
+                View Details <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            </a>
         </div>
     </div>
 </div> 
