@@ -9,10 +9,11 @@
         
         <!-- Favorite Button -->
         <button 
-            class="absolute top-3 right-3 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2 transition-all duration-200"
-            onclick="toggleFavorite(this, {{ $post['id'] }})"
+            class="favorite-btn absolute top-3 right-3 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2 transition-all duration-200"
+            data-post-id="{{ $post['id'] }}"
+            data-is-favorite="{{ isset($post['is_favorite']) && $post['is_favorite'] ? 'true' : 'false' }}"
         >
-            <i class="far fa-heart text-red-500" id="heart-{{ $post['id'] }}"></i>
+            <i class="{{ isset($post['is_favorite']) && $post['is_favorite'] ? 'fas' : 'far' }} fa-heart text-red-500" id="heart-{{ $post['id'] }}"></i>
         </button>
     </div>
     

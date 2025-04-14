@@ -12,6 +12,8 @@
     <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key={{ env('TENCENT_MAP_KEY', '') }}"></script>
     <!-- 自定义CSS -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <!-- 在head部分添加meta标签，用于CSRF保护 -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @yield('styles')
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
@@ -45,11 +47,8 @@
                             </button>
                             
                             <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                <a href="{{ route('user.profile') }}" class="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-100 border-b border-gray-100">
-                                    My Profile
-                                </a>
-                                <a href="{{ route('user.favorites') }}" class="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-100 border-b border-gray-100">
-                                    My Favorites
+                                <a href="{{ url('/favorites') }}" class="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-100 border-b border-gray-100">
+                                    My
                                 </a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
@@ -113,6 +112,14 @@
         @yield('content')
     </main>
 
+    @if(config('app.env') === 'local')
+    <!-- 调试信息区域 - 仅在开发环境中显示 -->
+    <div class="bg-gray-100 border-t border-gray-200 py-2 text-xs text-gray-500 text-center">
+        认证状态: @if(isset($isAuthenticated) && $isAuthenticated) 已登录 ({{ $authUser['email'] }}) @else 未登录 @endif | 
+        当前路由: {{ Route::currentRouteName() }}
+    </div>
+    @endif
+
     <!-- 底部导航栏 -->
     <footer class="bg-white border-t border-gray-200 sticky bottom-0 z-50">
         <div class="container mx-auto">
@@ -129,9 +136,9 @@
                         </div>
                         <span class="text-xs mt-1">Post</span>
                     </a>
-                    <a href="{{ route('user.profile') }}" class="flex flex-col items-center text-gray-500">
+                    <a href="{{ url('/favorites') }}" class="flex flex-col items-center text-gray-500">
                         <i class="fas fa-user text-xl"></i>
-                        <span class="text-xs mt-1">Profile</span>
+                        <span class="text-xs mt-1">My</span>
                     </a>
                 @else
                     <a href="{{ route('login') }}" class="flex flex-col items-center text-gray-500 relative">

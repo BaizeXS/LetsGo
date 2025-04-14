@@ -32,6 +32,14 @@ class AuthController extends Controller
                 'id' => 1,
                 'name' => $request->email,
                 'email' => $request->email,
+                'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
+                'bio' => 'Passionate about travel, with footprints in over 30 countries and regions.',
+                'location' => 'Hong Kong',
+                'education' => 'Hong Kong University',
+                'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
+                'posts_count' => 24,
+                'followers_count' => 1280,
+                'following_count' => 325,
                 'is_mock' => true
             ]]);
             

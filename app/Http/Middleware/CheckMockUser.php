@@ -20,6 +20,8 @@ class CheckMockUser
         if (!config('app.use_database', false) && session()->has('mock_user') && !Auth::check()) {
             // 设置视图共享变量，使视图可以访问模拟用户
             view()->share('mockUser', session('mock_user'));
+            view()->share('authUser', session('mock_user'));
+            view()->share('isAuthenticated', true);
         }
 
         return $next($request);

@@ -15,29 +15,59 @@ class UserController extends Controller
      */
     public function profile(Request $request, $username = null)
     {
-        if ($username) {
-            $user = User::where('name', $username)->firstOrFail();
+        // 检查应用是否配置为使用数据库
+        $useDatabase = config('app.use_database', false);
+        
+        // 如果是命名路由访问且没有提供username
+        if ($username === null) {
+            // 检查用户是否已认证
+            if (Auth::check() && $useDatabase) {
+                $user = Auth::user();
+            } elseif (session()->has('mock_user')) {
+                $user = session('mock_user');
+            } else {
+                // 未登录则重定向到登录页面
+                return redirect()->route('login')->with('error', '请先登录以查看个人资料');
+            }
         } else {
-            $user = Auth::user();
+            // 在使用数据库模式下，通过用户名查找用户
+            if ($useDatabase) {
+                $user = User::where('name', $username)->first();
+            } else {
+                $user = null;
+            }
+            
+            // 如果用户不存在且在开发环境下，使用模拟数据
+            if (!$user) {
+                $user = [
+                    'id' => 1,
+                    'name' => $username ?: 'Travel Expert',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
+                    'bio' => 'Passionate about travel, with footprints in over 30 countries and regions. Specializes in sharing practical travel guides and beautiful memories from journeys.',
+                    'location' => 'Hong Kong',
+                    'education' => 'Hong Kong University',
+                    'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
+                    'posts_count' => 24,
+                    'followers_count' => 1280,
+                    'following_count' => 325
+                ];
+            }
         }
         
-        // In a real application, this should get from the database
-        // For development purposes, we're using a mock data
-        if (config('app.env') === 'local' && !$user) {
-            $user = [
-                'id' => 1,
-                'name' => 'Travel Expert',
-                'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
-                'bio' => 'Passionate about travel, with footprints in over 30 countries and regions. Specializes in sharing practical travel guides and beautiful memories from journeys.',
-                'location' => 'Hong Kong',
-                'education' => 'Hong Kong University',
-                'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
-                'posts_count' => 24,
-                'followers_count' => 1280,
-                'following_count' => 325
-            ];
+        // 准备帖子数据
+        if ($useDatabase && isset($user->id)) {
+            // 使用数据库获取帖子
+            $pinnedPostIds = $user->pinned_posts ?? [];
             
-            // Get user's posts
+            $pinnedPosts = Post::whereIn('id', $pinnedPostIds)->get();
+            $regularPosts = Post::where('user_id', $user->id)
+                                ->whereNotIn('id', $pinnedPostIds)
+                                ->latest()
+                                ->get();
+                                
+            $posts = $pinnedPosts->merge($regularPosts);
+        } else {
+            // 使用模拟数据
             $posts = [
                 [
                     'id' => 1,
@@ -60,24 +90,21 @@ class UserController extends Controller
                     'pinned' => false
                 ]
             ];
+        }
+        
+        // 确定是否是用户自己的资料页
+        $isOwner = false;
+        if ($username) {
+            $isOwner = (Auth::check() && Auth::user()->name === $username) || 
+                       (session()->has('mock_user') && session('mock_user')['name'] === $username);
         } else {
-            // Get real user data
-            // Get posts with pinned ones first
-            $pinnedPostIds = $user->pinned_posts ?? [];
-            
-            $pinnedPosts = Post::whereIn('id', $pinnedPostIds)->get();
-            $regularPosts = Post::where('user_id', $user->id)
-                                ->whereNotIn('id', $pinnedPostIds)
-                                ->latest()
-                                ->get();
-                                
-            $posts = $pinnedPosts->merge($regularPosts);
+            $isOwner = true;
         }
         
         return view('user.profile', [
             'user' => $user, 
             'posts' => $posts,
-            'isOwner' => $username ? (Auth::check() && Auth::user()->name === $username) : true
+            'isOwner' => $isOwner
         ]);
     }
     
@@ -144,7 +171,7 @@ class UserController extends Controller
         // Update user information
         $user->update($validated);
         
-        return redirect()->route('user.profile')->with('success', 'Profile updated successfully!');
+        return redirect()->route('user.favorites')->with('success', 'Profile updated successfully!');
     }
     
     /**
@@ -197,56 +224,51 @@ class UserController extends Controller
      */
     public function favorites()
     {
-        $user = Auth::user();
+        // 检查应用是否配置为使用数据库
+        $useDatabase = config('app.use_database', false);
         
-        // In a real application, this should get from the database
-        // For development purposes, we're using a mock data
-        if (config('app.env') === 'local' && !$user) {
-            $user = [
-                'id' => 1,
-                'name' => 'Travel Expert',
-                'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
-                'bio' => 'Passionate about travel, with footprints in over 30 countries and regions. Specializes in sharing practical travel guides and beautiful memories from journeys.',
-                'location' => 'Hong Kong',
-                'education' => 'Hong Kong University',
-                'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
-                'posts_count' => 24,
-                'followers_count' => 1280,
-                'following_count' => 325
-            ];
-            
-            // Get user's favorite posts
-            $favorites = [
-                [
-                    'id' => 2,
-                    'title' => 'Xinjiang Duku Highway',
-                    'cover_image' => 'https://images.unsplash.com/photo-1494783367193-149034c05e8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                    'duration' => '5 Days · 4k per person',
-                    'author' => [
-                        'name' => 'Wind Chaser',
-                        'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg'
-                    ],
-                    'views' => 2341,
-                    'likes' => 521,
-                    'comments' => 89
-                ],
-                [
-                    'id' => 3,
-                    'title' => 'Paris Museum Tour',
-                    'cover_image' => 'https://images.unsplash.com/photo-1431274172761-fca41d930114?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-                    'duration' => '10 Days · Art Journey',
-                    'author' => [
-                        'name' => 'Art Enthusiast',
-                        'avatar' => 'https://randomuser.me/api/portraits/women/28.jpg'
-                    ],
-                    'views' => 3450,
-                    'likes' => 728,
-                    'comments' => 134
-                ]
-            ];
-        } else {
-            // Get real user favorites data
+        if ($useDatabase && Auth::check()) {
+            $user = Auth::user();
             $favorites = $user->favorites()->with('user')->latest()->get();
+        } else {
+            // 使用模拟用户或模拟数据
+            if (session()->has('mock_user')) {
+                $user = session('mock_user');
+                
+                // 确保用户对象包含所有必要的字段
+                $defaultUser = [
+                    'id' => 1,
+                    'name' => $user['name'] ?? 'Travel Expert',
+                    'email' => $user['email'] ?? 'travel@example.com',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
+                    'bio' => 'Passionate about travel, with footprints in over 30 countries and regions.',
+                    'location' => 'Hong Kong',
+                    'education' => 'Hong Kong University',
+                    'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
+                    'posts_count' => 24,
+                    'followers_count' => 1280,
+                    'following_count' => 325
+                ];
+                
+                // 合并默认值和会话中的值
+                $user = array_merge($defaultUser, $user);
+                
+                // Get favorite post IDs from session
+                $favoriteIds = session()->get('user_favorites', []);
+                
+                // Mock favorites data based on IDs
+                $allPosts = $this->getAllMockPosts();
+                $favorites = [];
+                
+                foreach ($allPosts as $post) {
+                    if (in_array($post['id'], $favoriteIds)) {
+                        $favorites[] = $post;
+                    }
+                }
+            } else {
+                // 如果没有认证用户，重定向到登录页面
+                return redirect()->route('login')->with('error', '请先登录以查看收藏');
+            }
         }
         
         return view('user.favorites', [
@@ -257,22 +279,231 @@ class UserController extends Controller
     }
     
     /**
+     * Get all mock posts for favorites feature
+     */
+    private function getAllMockPosts()
+    {
+        return [
+            [
+                'id' => 1,
+                'title' => 'Hokkaido 7-Day Trip',
+                'cover_image' => 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                'duration' => '7 Days 6 Nights · 12.24',
+                'author' => [
+                    'name' => 'Travel Expert',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg'
+                ],
+                'views' => 1245,
+                'likes' => 324,
+                'comments' => 56
+            ],
+            [
+                'id' => 2,
+                'title' => 'Xinjiang Duku Highway',
+                'cover_image' => 'https://images.unsplash.com/photo-1494783367193-149034c05e8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                'duration' => '5 Days · 4k per person',
+                'author' => [
+                    'name' => 'Wind Chaser',
+                    'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg'
+                ],
+                'views' => 2341,
+                'likes' => 521,
+                'comments' => 89
+            ],
+            [
+                'id' => 3,
+                'title' => 'Paris Museum Tour',
+                'cover_image' => 'https://images.unsplash.com/photo-1431274172761-fca41d930114?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                'duration' => '10 Days · Art Journey',
+                'author' => [
+                    'name' => 'Art Enthusiast',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/28.jpg'
+                ],
+                'views' => 3450,
+                'likes' => 728,
+                'comments' => 134
+            ],
+            [
+                'id' => 4,
+                'title' => 'Yunnan Dali Erhai Lake Leisure Trip',
+                'cover_image' => 'https://images.unsplash.com/photo-1555217851-6141ab127fa8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                'duration' => '4 Days 3 Nights · Relaxing',
+                'author' => [
+                    'name' => 'Slow Traveler',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/56.jpg'
+                ],
+                'views' => 1879,
+                'likes' => 402,
+                'comments' => 67
+            ],
+            [
+                'id' => 5,
+                'title' => 'Tokyo Food Exploration',
+                'cover_image' => 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                'duration' => '6 Days · 5k per person',
+                'author' => [
+                    'name' => 'Foodie Traveler',
+                    'avatar' => 'https://randomuser.me/api/portraits/men/22.jpg'
+                ],
+                'views' => 4210,
+                'likes' => 893,
+                'comments' => 156
+            ]
+        ];
+    }
+    
+    /**
+     * Display user's own posts
+     */
+    public function myPosts()
+    {
+        $user = Auth::user();
+        
+        if (!$user && session()->has('mock_user')) {
+            $user = session('mock_user');
+        }
+        
+        if (!$user) {
+            return redirect()->route('login')->with('error', '请先登录以查看您的笔记');
+        }
+        
+        // Get user posts
+        if (config('app.use_database', false)) {
+            $posts = $user->posts()->latest()->get();
+        } else {
+            // Mock data for development
+            $posts = [
+                [
+                    'id' => 1,
+                    'title' => 'Hokkaido 7-Day Trip Guide',
+                    'content' => 'This is a detailed guide for a 7-day trip to Hokkaido...',
+                    'cover_image' => 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                    'views' => 1245,
+                    'likes' => 324,
+                    'comments' => 12,
+                    'created_at' => '2023-12-15'
+                ],
+                [
+                    'id' => 4,
+                    'title' => 'Best Street Food in Bangkok',
+                    'content' => 'Discover the vibrant street food scene in Bangkok...',
+                    'cover_image' => 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                    'views' => 950,
+                    'likes' => 218,
+                    'comments' => 24,
+                    'created_at' => '2023-11-30'
+                ],
+                [
+                    'id' => 7,
+                    'title' => 'Hidden Gems in Kyoto',
+                    'content' => 'Explore the less-traveled paths in the ancient city of Kyoto...',
+                    'cover_image' => 'https://images.unsplash.com/photo-1493780474015-ba834fd0ce2f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+                    'views' => 780,
+                    'likes' => 156,
+                    'comments' => 18,
+                    'created_at' => '2023-11-12'
+                ]
+            ];
+        }
+        
+        return view('user.my', [
+            'user' => $user,
+            'posts' => $posts,
+            'isOwner' => true
+        ]);
+    }
+    
+    /**
      * Show followers list
      */
     public function followers($username = null)
     {
-        if ($username) {
-            $user = User::where('name', $username)->firstOrFail();
+        // 检查应用是否配置为使用数据库
+        $useDatabase = config('app.use_database', false);
+        
+        if ($useDatabase) {
+            if ($username) {
+                $user = User::where('name', $username)->first();
+                if (!$user) {
+                    abort(404, '用户不存在');
+                }
+            } else {
+                $user = Auth::user();
+                if (!$user) {
+                    return redirect()->route('login')->with('error', '请先登录以查看粉丝');
+                }
+            }
+            
+            $followers = $user->followers()->get();
         } else {
-            $user = Auth::user();
+            // 使用模拟数据
+            if ($username) {
+                $user = [
+                    'id' => 2,
+                    'name' => $username,
+                    'avatar' => 'https://randomuser.me/api/portraits/men/42.jpg',
+                    'bio' => 'Travel enthusiast and photographer.',
+                    'location' => 'Hong Kong',
+                    'education' => 'HKU',
+                    'tags' => ['Travel', 'Photography'],
+                    'posts_count' => 15,
+                    'followers_count' => 850,
+                    'following_count' => 120
+                ];
+            } else if (session()->has('mock_user')) {
+                $user = session('mock_user');
+                
+                // 确保用户对象包含所有必要的字段
+                $defaultUser = [
+                    'id' => 1,
+                    'name' => $user['name'] ?? 'Travel Expert',
+                    'email' => $user['email'] ?? 'travel@example.com',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
+                    'bio' => 'Passionate about travel, with footprints in over 30 countries and regions.',
+                    'location' => 'Hong Kong',
+                    'education' => 'Hong Kong University',
+                    'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
+                    'posts_count' => 24,
+                    'followers_count' => 1280,
+                    'following_count' => 325
+                ];
+                
+                // 合并默认值和会话中的值
+                $user = array_merge($defaultUser, $user);
+            } else {
+                return redirect()->route('login')->with('error', '请先登录以查看粉丝');
+            }
+            
+            // 模拟粉丝数据
+            $followers = [
+                [
+                    'id' => 3,
+                    'name' => 'Mountain Explorer',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/22.jpg',
+                    'bio' => 'Love hiking and mountain views'
+                ],
+                [
+                    'id' => 4,
+                    'name' => 'City Walker',
+                    'avatar' => 'https://randomuser.me/api/portraits/men/36.jpg',
+                    'bio' => 'Urban explorer and street photographer'
+                ]
+            ];
         }
         
-        $followers = $user->followers()->get();
+        // 确定是否是用户自己的资料页
+        $isOwner = false;
+        if ($username) {
+            $isOwner = (Auth::check() && Auth::user()->name === $username) || 
+                       (session()->has('mock_user') && session('mock_user')['name'] === $username);
+        } else {
+            $isOwner = true;
+        }
         
         return view('user.followers', [
             'user' => $user,
             'followers' => $followers,
-            'isOwner' => $username ? (Auth::check() && Auth::user()->name === $username) : true
+            'isOwner' => $isOwner
         ]);
     }
     
@@ -281,18 +512,92 @@ class UserController extends Controller
      */
     public function following($username = null)
     {
-        if ($username) {
-            $user = User::where('name', $username)->firstOrFail();
+        // 检查应用是否配置为使用数据库
+        $useDatabase = config('app.use_database', false);
+        
+        if ($useDatabase) {
+            if ($username) {
+                $user = User::where('name', $username)->first();
+                if (!$user) {
+                    abort(404, '用户不存在');
+                }
+            } else {
+                $user = Auth::user();
+                if (!$user) {
+                    return redirect()->route('login')->with('error', '请先登录以查看关注');
+                }
+            }
+            
+            $following = $user->following()->get();
         } else {
-            $user = Auth::user();
+            // 使用模拟数据
+            if ($username) {
+                $user = [
+                    'id' => 2,
+                    'name' => $username,
+                    'avatar' => 'https://randomuser.me/api/portraits/men/42.jpg',
+                    'bio' => 'Travel enthusiast and photographer.',
+                    'location' => 'Hong Kong',
+                    'education' => 'HKU',
+                    'tags' => ['Travel', 'Photography'],
+                    'posts_count' => 15,
+                    'followers_count' => 850,
+                    'following_count' => 120
+                ];
+            } else if (session()->has('mock_user')) {
+                $user = session('mock_user');
+                
+                // 确保用户对象包含所有必要的字段
+                $defaultUser = [
+                    'id' => 1,
+                    'name' => $user['name'] ?? 'Travel Expert',
+                    'email' => $user['email'] ?? 'travel@example.com',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/44.jpg',
+                    'bio' => 'Passionate about travel, with footprints in over 30 countries and regions.',
+                    'location' => 'Hong Kong',
+                    'education' => 'Hong Kong University',
+                    'tags' => ['ENTP', 'Travel Blogger', 'Photography'],
+                    'posts_count' => 24,
+                    'followers_count' => 1280,
+                    'following_count' => 325
+                ];
+                
+                // 合并默认值和会话中的值
+                $user = array_merge($defaultUser, $user);
+            } else {
+                return redirect()->route('login')->with('error', '请先登录以查看关注');
+            }
+            
+            // 模拟关注数据
+            $following = [
+                [
+                    'id' => 5,
+                    'name' => 'Food Traveller',
+                    'avatar' => 'https://randomuser.me/api/portraits/women/68.jpg',
+                    'bio' => 'Exploring the world through food'
+                ],
+                [
+                    'id' => 6,
+                    'name' => 'Adventure Seeker',
+                    'avatar' => 'https://randomuser.me/api/portraits/men/71.jpg',
+                    'bio' => 'Extreme sports and adventure travel'
+                ]
+            ];
         }
         
-        $following = $user->following()->get();
+        // 确定是否是用户自己的资料页
+        $isOwner = false;
+        if ($username) {
+            $isOwner = (Auth::check() && Auth::user()->name === $username) || 
+                       (session()->has('mock_user') && session('mock_user')['name'] === $username);
+        } else {
+            $isOwner = true;
+        }
         
         return view('user.following', [
             'user' => $user,
             'following' => $following,
-            'isOwner' => $username ? (Auth::check() && Auth::user()->name === $username) : true
+            'isOwner' => $isOwner
         ]);
     }
 }

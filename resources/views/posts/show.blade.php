@@ -184,16 +184,18 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
     }
     
     .comments-list {
         overflow-y: auto;
         flex-grow: 1;
+        max-height: calc(100% - 80px); /* 减少评论框占用的空间 */
+        margin-bottom: 0.5rem;
     }
     
     .comment {
-        padding: 1rem;
+        padding: 0.75rem;
         border-bottom: 1px solid #e5e7eb;
         display: flex;
     }
@@ -274,10 +276,12 @@
 
 @section('content')
 <!-- 弹出的详情页面 -->
-<div class="post-detail-modal">
+<div class="post-detail-modal" id="post-detail-modal">
     <div class="post-detail-content">
         <!-- 关闭按钮 -->
-        @include('partials.close-button')
+        <a href="{{ route('home') }}" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md z-10 hover:bg-gray-100">
+            <i class="fas fa-times"></i>
+        </a>
         
         <!-- 图片轮播区域 -->
         <div class="image-slider">
@@ -358,7 +362,7 @@
             
             <div class="comments-list" id="comments-list">
                 @foreach($post['comments'] as $comment)
-                    <div class="comment">
+                    <div class="comment" data-id="{{ $comment['id'] }}" data-user-id="{{ $comment['user']['id'] ?? 0 }}" data-likes="{{ $comment['likes'] ?? 0 }}" data-user-liked="{{ $comment['user_liked'] ?? false }}">
                         <img src="{{ $comment['user']['avatar'] }}" alt="{{ $comment['user']['name'] }}" class="comment-avatar">
                         
                         <div class="comment-content">
@@ -373,11 +377,16 @@
                             
                             <div class="comment-actions">
                                 <button class="comment-like" data-id="{{ $comment['id'] }}">
-                                    <i class="far fa-heart mr-1"></i> Like
+                                    <i class="{{ isset($comment['user_liked']) && $comment['user_liked'] ? 'fas text-red-500' : 'far' }} fa-heart mr-1"></i> <span class="like-count">{{ $comment['likes'] ?? 0 }}</span> Like
                                 </button>
                                 <button class="comment-reply" data-id="{{ $comment['id'] }}">
                                     <i class="far fa-comment mr-1"></i> Reply
                                 </button>
+                                @if(auth()->check() && (auth()->id() == ($comment['user']['id'] ?? 0) || auth()->user()->isAdmin()))
+                                <button class="comment-delete text-red-500" data-id="{{ $comment['id'] }}">
+                                    <i class="far fa-trash-alt mr-1"></i> Delete
+                                </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -510,6 +519,22 @@
                 });
             });
         });
+
+        // 设置点赞状态
+        const likeBtn = document.getElementById('like-btn');
+        if (likeBtn && {{ isset($post['user_liked']) && $post['user_liked'] ? 'true' : 'false' }}) {
+            likeBtn.classList.add('liked');
+            likeBtn.querySelector('i').classList.remove('far');
+            likeBtn.querySelector('i').classList.add('fas');
+        }
+
+        // 设置收藏状态
+        const favoriteBtn = document.getElementById('favorite-btn');
+        if (favoriteBtn && {{ isset($post['user_favorited']) && $post['user_favorited'] ? 'true' : 'false' }}) {
+            favoriteBtn.classList.add('favorited');
+            favoriteBtn.querySelector('i').classList.remove('far');
+            favoriteBtn.querySelector('i').classList.add('fas');
+        }
     });
 </script>
 @endsection

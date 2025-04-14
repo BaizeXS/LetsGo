@@ -95,8 +95,71 @@ class PostController extends Controller
      */
     public function toggleFavorite($id)
     {
-        // In a real application, this should save/delete user favorite records
-        return response()->json(['success' => true]);
+        // Get the current user
+        $user = auth()->user();
+        
+        // For development with session-based mock login
+        if (!$user && session()->has('mock_user')) {
+            // Get current favorites from session
+            $favorites = session()->get('user_favorites', []);
+            
+            // Toggle favorite status
+            if (in_array($id, $favorites)) {
+                $favorites = array_diff($favorites, [$id]);
+                $message = 'Post removed from favorites';
+                $isFavorite = false;
+            } else {
+                $favorites[] = $id;
+                $message = 'Post added to favorites';
+                $isFavorite = true;
+            }
+            
+            // Store updated favorites in session
+            session()->put('user_favorites', $favorites);
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'isFavorite' => $isFavorite
+                ]);
+            }
+            
+            return redirect()->back()->with('success', $message);
+        } 
+        // For database-based auth when implemented
+        else if ($user) {
+            // When using database, toggle the favorite relationship
+            if ($user->favorites()->where('post_id', $id)->exists()) {
+                $user->favorites()->detach($id);
+                $message = 'Post removed from favorites';
+                $isFavorite = false;
+            } else {
+                $user->favorites()->attach($id);
+                $message = 'Post added to favorites';
+                $isFavorite = true;
+            }
+            
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'isFavorite' => $isFavorite
+                ]);
+            }
+            
+            return redirect()->back()->with('success', $message);
+        } else {
+            // User not logged in
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please login to favorite posts'
+                ], 401);
+            }
+            
+            return redirect()->route('login')->with('error', 'Please login to favorite posts');
+        }
     }
     
     /**

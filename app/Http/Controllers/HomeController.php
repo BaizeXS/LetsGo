@@ -31,6 +31,19 @@ class HomeController extends Controller
         // Get posts based on category
         $posts = $this->getPostsByCategory($activeCategory);
         
+        // Get user favorites
+        $userFavorites = [];
+        if (auth()->check()) {
+            $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
+        } elseif (session()->has('mock_user')) {
+            $userFavorites = session()->get('user_favorites', []);
+        }
+        
+        // Mark favorites
+        foreach ($posts as &$post) {
+            $post['is_favorite'] = in_array($post['id'], $userFavorites);
+        }
+        
         return view('home.index', [
             'activeCategory' => $activeCategory,
             'categories' => $categories,
@@ -161,7 +174,15 @@ class HomeController extends Controller
      */
     private function getDummyPosts()
     {
-        return [
+        // Get user favorites
+        $userFavorites = [];
+        if (auth()->check()) {
+            $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
+        } elseif (session()->has('mock_user')) {
+            $userFavorites = session()->get('user_favorites', []);
+        }
+        
+        $posts = [
             [
                 'id' => 1,
                 'title' => 'Hokkaido 7-Day Trip',
@@ -270,6 +291,13 @@ class HomeController extends Controller
                 'comments' => 94
             ]
         ];
+        
+        // Mark favorites
+        foreach ($posts as &$post) {
+            $post['is_favorite'] = in_array($post['id'], $userFavorites);
+        }
+        
+        return $posts;
     }
 
     /**

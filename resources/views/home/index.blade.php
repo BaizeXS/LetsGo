@@ -23,20 +23,85 @@
 
 @section('scripts')
 <script>
-    // 切换收藏状态
-    function toggleFavorite(el, postId) {
-        const heartIcon = document.getElementById(`heart-${postId}`);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle favorite button clicks
+        const favoriteButtons = document.querySelectorAll('.favorite-btn');
         
-        if (heartIcon.classList.contains('far')) {
-            heartIcon.classList.remove('far');
-            heartIcon.classList.add('fas');
-            // 这里可以添加AJAX请求到后端保存收藏
-        } else {
-            heartIcon.classList.remove('fas');
-            heartIcon.classList.add('far');
-            // 这里可以添加AJAX请求到后端移除收藏
+        favoriteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const postId = this.getAttribute('data-post-id');
+                const heartIcon = document.getElementById(`heart-${postId}`);
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // 创建FormData对象来发送数据
+                const formData = new FormData();
+                formData.append('_token', token);
+                
+                // Send AJAX request to toggle favorite
+                fetch(`/posts/${postId}/favorite`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: formData,
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            // User not logged in, redirect to login
+                            window.location.href = '/login';
+                            throw new Error('Please login to favorite posts');
+                        }
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Update the heart icon
+                        if (data.isFavorite) {
+                            heartIcon.classList.remove('far');
+                            heartIcon.classList.add('fas');
+                            button.setAttribute('data-is-favorite', 'true');
+                            
+                            // Show success notification
+                            showNotification('Post added to favorites', 'success');
+                        } else {
+                            heartIcon.classList.remove('fas');
+                            heartIcon.classList.add('far');
+                            button.setAttribute('data-is-favorite', 'false');
+                            
+                            // Show success notification
+                            showNotification('Post removed from favorites', 'success');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification(error.message, 'error');
+                });
+            });
+        });
+        
+        // Notification helper function
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg transition-opacity duration-500 z-50`;
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 3000);
         }
-    }
+    });
 
     // 无限滚动加载
     let page = 2;

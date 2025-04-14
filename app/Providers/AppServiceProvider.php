@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\MockAuth;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 注册中间件别名
+        Route::aliasMiddleware('mock.auth', MockAuth::class);
+        
         // 检查模拟用户
         if (!config('app.use_database', false)) {
             view()->composer('*', function ($view) {
