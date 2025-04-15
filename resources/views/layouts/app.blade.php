@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LetsGO - Travel Notes Sharing Platform</title>
+    <!-- 引入jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <!-- 引入Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <!-- 引入Font Awesome -->
@@ -22,13 +24,13 @@
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <!-- 搜索栏 -->
-                <div class="relative w-full max-w-md">
-                    <form action="{{ route('search') }}" method="GET">
+                <div class="relative w-full max-w-md" id="search-container">
+                    <form action="{{ route('search') }}" method="GET" id="search-form">
                         <div class="flex items-center border border-gray-300 rounded-full overflow-hidden">
                             <button type="submit" class="px-3">
                                 <i class="fas fa-search text-gray-400"></i>
                             </button>
-                            <input type="text" name="query" placeholder="Search destinations or keywords" class="w-full py-2 px-1 outline-none" value="{{ request('query') }}">
+                            <input type="text" name="query" placeholder="Search destinations or keywords" class="w-full py-2 px-1 outline-none" value="{{ request('query') }}" autocomplete="off">
                         </div>
                     </form>
                 </div>

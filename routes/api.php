@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\HomeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,4 +29,10 @@ Route::post('/comments/{id}/like', [CommentController::class, 'toggleLike']);
 Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
 // 生成路线图
-Route::post('/generate-route-map', [PostController::class, 'generateRouteMap'])->name('generate.route.map'); 
+Route::post('/generate-route-map', [PostController::class, 'generateRouteMap'])->name('generate.route.map');
+
+// 搜索路由
+Route::get('/search', [HomeController::class, 'apiSearch'])->name('api.search');
+
+// 获取帖子（用于无限加载）
+Route::get('/posts', [HomeController::class, 'getPosts'])->name('api.posts'); 

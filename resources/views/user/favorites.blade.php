@@ -129,7 +129,7 @@
         <i class="fas fa-heart text-5xl text-gray-300 mb-3"></i>
         <h3 class="text-xl font-medium text-gray-600 mb-2">No favorites yet</h3>
         <p class="text-gray-500 mb-4">Save your favorite travel notes for easy access later</p>
-        <a href="{{ route('posts.index') }}" class="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+        <a href="{{ route('home') }}" class="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
             <i class="fas fa-search mr-2"></i>Browse Posts
         </a>
     </div>
