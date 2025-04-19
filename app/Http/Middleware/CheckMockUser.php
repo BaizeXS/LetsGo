@@ -16,9 +16,9 @@ class CheckMockUser
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // 检查会话中是否有模拟用户
+        // Check if there is a mock user in the session
         if (!config('app.use_database', false) && session()->has('mock_user') && !Auth::check()) {
-            // 设置视图共享变量，使视图可以访问模拟用户
+            // Set view shared variables, so views can access the mock user
             view()->share('mockUser', session('mock_user'));
             view()->share('authUser', session('mock_user'));
             view()->share('isAuthenticated', true);

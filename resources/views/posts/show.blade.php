@@ -2,7 +2,7 @@
 
 @section('styles')
 <style>
-    /* 弹出层样式 */
+    /* Popup layer styles */
     .post-detail-modal {
         position: fixed;
         top: 0;
@@ -32,7 +32,7 @@
         padding: 1rem;
     }
     
-    /* 图片轮播区域 */
+    /* Image carousel area */
     .image-slider {
         grid-column: 1;
         grid-row: 1;
@@ -103,7 +103,7 @@
         right: 1rem;
     }
     
-    /* 内容区域 */
+    /* Content area */
     .post-content {
         grid-column: 2;
         grid-row: 1;
@@ -161,7 +161,7 @@
         line-height: 1.6;
     }
     
-    /* 路线图区域 */
+    /* Route map area */
     .route-map {
         grid-column: 1;
         grid-row: 2;
@@ -170,7 +170,7 @@
         background-color: #f9fafb;
     }
     
-    /* 评论区域 */
+    /* Comments area */
     .comments-section {
         grid-column: 2;
         grid-row: 2;
@@ -190,7 +190,7 @@
     .comments-list {
         overflow-y: auto;
         flex-grow: 1;
-        max-height: calc(100% - 80px); /* 减少评论框占用的空间 */
+        max-height: calc(100% - 80px); /* Reduce space occupied by comment box */
         margin-bottom: 0.5rem;
     }
     
@@ -275,15 +275,15 @@
 @endsection
 
 @section('content')
-<!-- 弹出的详情页面 -->
+<!-- Pop-up detail page -->
 <div class="post-detail-modal" id="post-detail-modal">
     <div class="post-detail-content">
-        <!-- 关闭按钮 -->
+        <!-- Close button -->
         <a href="{{ route('home') }}" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-md z-10 hover:bg-gray-100">
             <i class="fas fa-times"></i>
         </a>
         
-        <!-- 图片轮播区域 -->
+        <!-- Image carousel area -->
         <div class="image-slider">
             <div class="slider-wrapper" id="slider-wrapper">
                 @foreach($post['images'] as $image)
@@ -306,7 +306,7 @@
             </div>
         </div>
         
-        <!-- 内容区域 -->
+        <!-- Content area -->
         <div class="post-content">
             <h1 class="post-title">{{ $post['title'] }}</h1>
             
@@ -339,7 +339,7 @@
             </div>
         </div>
         
-        <!-- 路线图区域 -->
+        <!-- Route map area -->
         <div class="route-map" id="route-map">
             <div class="p-4 h-full flex flex-col justify-center items-center">
                 <i class="fas fa-route text-4xl text-gray-400 mb-4"></i>
@@ -351,7 +351,7 @@
             </div>
         </div>
         
-        <!-- 评论区域 -->
+        <!-- Comments area -->
         <div class="comments-section">
             <div class="comments-header">
                 <h2 class="text-lg font-semibold">Comments (<span id="comments-count">{{ count($post['comments']) }}</span>)</h2>
@@ -396,7 +396,7 @@
             @include('partials.comment-form')
         </div>
         
-        <!-- 操作按钮 -->
+        <!-- Action buttons -->
         @include('partials.post-actions')
     </div>
 </div>
@@ -405,7 +405,7 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 图片轮播功能
+        // Image carousel functionality
         const sliderWrapper = document.getElementById('slider-wrapper');
         const sliderDots = document.querySelectorAll('.slider-dot');
         const prevBtn = document.querySelector('.slider-prev');
@@ -413,11 +413,11 @@
         let currentIndex = 0;
         const totalSlides = sliderDots.length;
         
-        // 更新轮播图位置
+        // Update carousel position
         function updateSlider() {
             sliderWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
             
-            // 更新指示点
+            // Update indicators
             sliderDots.forEach((dot, index) => {
                 if (index === currentIndex) {
                     dot.classList.add('active');
@@ -427,19 +427,19 @@
             });
         }
         
-        // 下一张图片
+        // Next image
         function nextSlide() {
             currentIndex = (currentIndex + 1) % totalSlides;
             updateSlider();
         }
         
-        // 上一张图片
+        // Previous image
         function prevSlide() {
             currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
             updateSlider();
         }
         
-        // 点击指示点切换图片
+        // Click indicator to switch image
         sliderDots.forEach((dot, index) => {
             dot.addEventListener('click', () => {
                 currentIndex = index;
@@ -447,18 +447,18 @@
             });
         });
         
-        // 点击前进后退按钮
+        // Click forward/back buttons
         if (prevBtn) prevBtn.addEventListener('click', prevSlide);
         if (nextBtn) nextBtn.addEventListener('click', nextSlide);
         
-        // 每5秒自动切换图片
+        // Automatically switch images every 5 seconds
         setInterval(nextSlide, 5000);
         
-        // 生成路线图
+        // Generate route map
         document.getElementById('generate-route').addEventListener('click', function() {
             const routeMapElement = document.getElementById('route-map');
             
-            // 显示加载中
+            // Show loading
             routeMapElement.innerHTML = `
                 <div class="p-4 h-full flex flex-col justify-center items-center">
                     <i class="fas fa-spinner fa-spin text-4xl text-yellow-500 mb-4"></i>
@@ -466,7 +466,7 @@
                 </div>
             `;
             
-            // 调用API生成路线图
+            // Call API to generate route map
             fetch('/api/generate-route-map', {
                 method: 'POST',
                 headers: {
@@ -520,7 +520,7 @@
             });
         });
 
-        // 设置点赞状态
+        // Set like status
         const likeBtn = document.getElementById('like-btn');
         if (likeBtn && {{ isset($post['user_liked']) && $post['user_liked'] ? 'true' : 'false' }}) {
             likeBtn.classList.add('liked');
@@ -528,7 +528,7 @@
             likeBtn.querySelector('i').classList.add('fas');
         }
 
-        // 设置收藏状态
+        // Set favorite status
         const favoriteBtn = document.getElementById('favorite-btn');
         if (favoriteBtn && {{ isset($post['user_favorited']) && $post['user_favorited'] ? 'true' : 'false' }}) {
             favoriteBtn.classList.add('favorited');

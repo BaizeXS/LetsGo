@@ -1,23 +1,23 @@
 /**
- * LetsGO 旅游网站主JavaScript文件
+ * LetsGO Travel Website Main JavaScript File
  */
 
 $(document).ready(function() {
-    // 初始化收藏按钮
+    // Initialize favorite buttons
     initFavoriteButtons();
     
-    // 初始化滚动加载
+    // Initialize infinite scroll
     // initInfiniteScroll();
     
-    // 初始化图片懒加载
+    // Initialize image lazy loading
     initLazyLoading();
 });
 
 /**
- * 初始化收藏按钮
+ * Initialize favorite buttons
  */
 function initFavoriteButtons() {
-    // 为所有收藏按钮添加动画效果
+    // Add animation effect to all favorite buttons
     $('.fa-heart').on('click', function() {
         $(this).addClass('heart-animation');
         setTimeout(() => {
@@ -27,7 +27,7 @@ function initFavoriteButtons() {
 }
 
 /**
- * 初始化无限滚动
+ * Initialize infinite scroll
  */
 function initInfiniteScroll() {
     const $postsContainer = $('#posts-container');
@@ -37,21 +37,21 @@ function initInfiniteScroll() {
     $(window).on('scroll', function() {
         if (loading) return;
         
-        // 检查是否已经滚动到底部
+        // Check if scrolled to the bottom
         if ($(window).height() + $(window).scrollTop() >= $(document).height() - 500) {
             loading = true;
             page++;
             
-            // 显示加载指示器
+            // Show loading indicator
             const $loadingIndicator = $('<div class="text-center py-4"><div class="spinner mx-auto"></div></div>');
             $postsContainer.append($loadingIndicator);
             
-            // 模拟请求数据
+            // Simulate data request
             setTimeout(() => {
-                // 移除加载指示器
+                // Remove loading indicator
                 $loadingIndicator.remove();
                 
-                // 加载新的卡片内容
+                // Load new card content
                 // ...
                 
                 loading = false;
@@ -61,10 +61,10 @@ function initInfiniteScroll() {
 }
 
 /**
- * 初始化图片懒加载
+ * Initialize image lazy loading
  */
 function initLazyLoading() {
-    // 检查是否支持IntersectionObserver
+    // Check if IntersectionObserver is supported
     if ('IntersectionObserver' in window) {
         const lazyImages = $('img[data-src]');
         
@@ -83,7 +83,7 @@ function initLazyLoading() {
             imageObserver.observe(this);
         });
     } else {
-        // 如果不支持，则使用简单的延迟加载方法
+        // If not supported, use simple delayed loading method
         // ...
     }
 } 

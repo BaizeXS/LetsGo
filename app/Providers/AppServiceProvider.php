@@ -21,10 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 注册中间件别名
+        // Register middleware alias
         Route::aliasMiddleware('mock.auth', MockAuth::class);
         
-        // 检查模拟用户
+        // Check mock user
         if (!config('app.use_database', false)) {
             view()->composer('*', function ($view) {
                 if (session()->has('mock_user')) {

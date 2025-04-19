@@ -45,13 +45,13 @@
                     <div class="mt-4 md:mt-0">
                         @if($isOwner)
                         <a href="{{ route('user.edit') }}" class="inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                            <i class="fas fa-edit mr-2"></i>编辑资料
+                            <i class="fas fa-edit mr-2"></i>Edit Profile
                         </a>
                         @else
                         <form action="{{ route('users.follow', $user['id']) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
-                                <i class="fas fa-user-plus mr-2"></i>关注
+                                <i class="fas fa-user-plus mr-2"></i>Follow
                             </button>
                         </form>
                         @endif
@@ -61,15 +61,15 @@
                 <div class="flex justify-center md:justify-start space-x-8 mt-6">
                     <a href="{{ $isOwner ? route('user.profile') : route('users.profile', $user['name']) }}" class="text-center">
                         <span class="block text-xl font-bold">{{ $user['posts_count'] }}</span>
-                        <span class="text-gray-500">游记</span>
+                        <span class="text-gray-500">Posts</span>
                     </a>
                     <a href="{{ $isOwner ? route('user.followers') : route('users.followers', $user['name']) }}" class="text-center">
                         <span class="block text-xl font-bold">{{ $user['followers_count'] }}</span>
-                        <span class="text-gray-500">粉丝</span>
+                        <span class="text-gray-500">Followers</span>
                     </a>
                     <a href="{{ $isOwner ? route('user.following') : route('users.following', $user['name']) }}" class="text-center">
                         <span class="block text-xl font-bold">{{ $user['following_count'] }}</span>
-                        <span class="text-gray-500 border-b-2 border-blue-500 pb-1">关注</span>
+                        <span class="text-gray-500 border-b-2 border-blue-500 pb-1">Following</span>
                     </a>
                 </div>
             </div>
@@ -78,7 +78,7 @@
 
     <!-- Following List -->
     <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-bold mb-6">关注列表</h2>
+        <h2 class="text-xl font-bold mb-6">Following List</h2>
         
         <div class="divide-y">
             @forelse($following as $follow)
@@ -96,7 +96,7 @@
                     <form action="{{ route('users.follow', $follow['id']) }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded hover:bg-blue-200 transition">
-                            <i class="fas fa-check mr-1"></i>已关注
+                            <i class="fas fa-check mr-1"></i>Following
                         </button>
                     </form>
                 </div>
@@ -104,7 +104,7 @@
             </div>
             @empty
             <div class="py-8 text-center">
-                <p class="text-gray-500">暂无关注</p>
+                <p class="text-gray-500">No one following yet</p>
             </div>
             @endforelse
         </div>

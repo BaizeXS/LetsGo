@@ -1,117 +1,117 @@
-# LetsGo - 旅游网站
+# LetsGo - Travel Website
 
-LetsGo是一个基于Laravel的旅游网站，提供旅游路线规划、游记分享、用户社交等功能。该项目使用Docker进行开发和部署，以便团队成员可以在一致的环境中进行协同开发。
+LetsGo is a Laravel-based travel website that provides travel route planning, travel diary sharing, user social networking, and other features. The project uses Docker for development and deployment, allowing team members to collaborate in a consistent environment.
 
-## 项目结构
+## Project Structure
 
 ```
 LetsGo/
-├── app/                  # Laravel应用核心代码
-├── bootstrap/            # Laravel引导文件
-├── config/               # 配置文件
-├── database/             # 数据库迁移和种子
-├── docker-compose.yml    # Docker Compose配置
-├── Dockerfile            # Docker镜像构建配置
-├── public/               # 公共资源目录
-├── resources/            # 前端资源（视图、JS、CSS等）
-├── routes/               # 路由定义
-├── scripts/              # 实用脚本
-├── storage/              # 存储目录
-└── tests/                # 测试文件
+├── app/                  # Laravel application core code
+├── bootstrap/            # Laravel bootstrap files
+├── config/               # Configuration files
+├── database/             # Database migrations and seeds
+├── docker-compose.yml    # Docker Compose configuration
+├── Dockerfile            # Docker image build configuration
+├── public/               # Public resources directory
+├── resources/            # Frontend resources (views, JS, CSS, etc.)
+├── routes/               # Route definitions
+├── scripts/              # Utility scripts
+├── storage/              # Storage directory
+└── tests/                # Test files
 ```
 
-## 环境要求
+## Environment Requirements
 
 - Docker
 - Docker Compose
 - Git
 
-## 本地开发设置
+## Local Development Setup
 
-### 克隆仓库
+### Clone Repository
 
 ```bash
-git clone https://github.com/你的用户名/LetsGo.git
+git clone https://github.com/your-username/LetsGo.git
 cd LetsGo
 ```
 
-### 启动Docker环境
+### Start Docker Environment
 
 ```bash
-# 构建并启动容器
+# Build and start containers
 docker-compose up -d
 
-# 查看容器状态
+# Check container status
 docker-compose ps
 ```
 
-### 项目初始化
+### Project Initialization
 
 ```bash
-# 进入容器
+# Enter container
 docker exec -it xampp-apache bash
 
-# 安装依赖
+# Install dependencies
 composer install
 npm install
 
-# 环境设置
+# Environment setup
 cp .env.example .env
 php artisan key:generate
 
-# 数据库迁移
+# Database migration
 php artisan migrate --seed
 
-# 前端资源编译
+# Frontend resource compilation
 npm run dev
 ```
 
-### 访问网站
+### Access Website
 
-- 网站: http://localhost
+- Website: http://localhost
 - phpMyAdmin: http://localhost:8080
 
-## Docker环境说明
+## Docker Environment Description
 
-项目使用以下Docker容器:
+The project uses the following Docker containers:
 
-- **apache**: 包含PHP 8.2、Apache和Node.js的Web服务器容器
-- **mariadb**: MariaDB 10.6数据库服务器
-- **phpmyadmin**: 用于数据库管理的phpMyAdmin界面
+- **apache**: Web server container with PHP
+- **mariadb**: MariaDB 10.6 database server
+- **phpmyadmin**: phpMyAdmin interface for database management
 
-## 开发工作流程
+## Development Workflow
 
-1. 创建功能分支进行开发
+1. Create feature branches for development
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
-2. 提交更改
+2. Commit changes
 ```bash
 git add .
-git commit -m "描述你的更改"
+git commit -m "Describe your changes"
 ```
 
-3. 推送到GitHub进行协作
+3. Push to GitHub for collaboration
 ```bash
 git push origin feature/your-feature-name
 ```
 
-4. 创建Pull Request进行代码审查
+4. Create Pull Request for code review
 
-## 项目维护
+## Project Maintenance
 
-- **停止容器**: `docker-compose down`
-- **重新构建**: `docker-compose build`
-- **查看日志**: `docker-compose logs -f [服务名]`
+- **Stop containers**: `docker-compose down`
+- **Rebuild**: `docker-compose build`
+- **View logs**: `docker-compose logs -f [service-name]`
 
-## 注意事项
+## Notes
 
-- 确保`.env`文件中的数据库配置与docker-compose.yml中的配置匹配
-- 运行数据库命令时，确保是在容器内执行
+- Ensure the database configuration in the `.env` file matches the configuration in docker-compose.yml
+- When running database commands, make sure to execute them inside the container
 
-## 贡献指南
+## Contribution Guidelines
 
-1. 遵循Laravel编码规范
-2. 为所有新功能编写测试
-3. 提交前运行测试: `php artisan test`
+1. Follow Laravel coding standards
+2. Write tests for all new features 
+3. Run tests before submitting: `php artisan test`

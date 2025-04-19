@@ -47,14 +47,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 点赞功能
+    // Like functionality
     const likeBtn = document.getElementById('like-btn');
     likeBtn.addEventListener('click', function() {
         const isLiked = likeBtn.classList.contains('liked');
         const likesCount = document.getElementById('likes-count');
         const currentLikes = parseInt(likesCount.textContent || '0');
         
-        // 先进行视觉反馈
+        // First do visual feedback
         if (!isLiked) {
             likeBtn.classList.add('liked');
             likeBtn.querySelector('i').classList.remove('far');
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 调用API更新点赞状态
+        // Call API to update like status
         fetch('/posts/{{ $post["id"] }}/like', {
             method: 'POST',
             headers: {
@@ -82,12 +82,12 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            // 更新UI，以服务器返回的数据为准
+            // Update UI based on server response data
             if (likesCount && data.likes !== undefined) {
                 likesCount.textContent = data.likes;
             }
             
-            // 如果服务器返回的状态与预期不符，恢复UI
+            // If server status doesn't match expected state, restore UI
             if (data.user_liked !== undefined && ((data.user_liked && !likeBtn.classList.contains('liked')) || (!data.user_liked && likeBtn.classList.contains('liked')))) {
                 likeBtn.classList.toggle('liked');
                 const icon = likeBtn.querySelector('i');
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            // 发生错误时恢复原状态
+            // Restore original state on error
             likeBtn.classList.toggle('liked');
             const icon = likeBtn.querySelector('i');
             if (likeBtn.classList.contains('liked')) {
@@ -121,12 +121,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // 收藏功能
+    // Favorite functionality
     const favoriteBtn = document.getElementById('favorite-btn');
     favoriteBtn.addEventListener('click', function() {
         const isFavorited = favoriteBtn.classList.contains('favorited');
         
-        // 先进行视觉反馈
+        // First do visual feedback
         if (!isFavorited) {
             favoriteBtn.classList.add('favorited');
             favoriteBtn.querySelector('i').classList.remove('far');
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
             favoriteBtn.querySelector('i').classList.add('far');
         }
         
-        // 调用API更新收藏状态
+        // Call API to update favorite status
         fetch('/posts/{{ $post["id"] }}/favorite', {
             method: 'POST',
             headers: {
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            // 如果服务器返回的状态与预期不符，恢复UI
+            // If server status doesn't match expected state, restore UI
             if (data.user_favorited !== undefined && ((data.user_favorited && !favoriteBtn.classList.contains('favorited')) || (!data.user_favorited && favoriteBtn.classList.contains('favorited')))) {
                 favoriteBtn.classList.toggle('favorited');
                 const icon = favoriteBtn.querySelector('i');
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            // 发生错误时恢复原状态
+            // Restore original state on error
             favoriteBtn.classList.toggle('favorited');
             const icon = favoriteBtn.querySelector('i');
             if (favoriteBtn.classList.contains('favorited')) {

@@ -7,7 +7,7 @@
         const closeButton = document.getElementById('close-modal');
         if (closeButton) {
             closeButton.addEventListener('click', function() {
-                // 关闭当前页面，返回上一页
+                // Close current page and return to previous page
                 window.history.back();
             });
         }

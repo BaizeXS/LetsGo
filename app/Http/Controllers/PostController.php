@@ -95,6 +95,21 @@ class PostController extends Controller
      */
     public function toggleFavorite($id)
     {
+        // 添加调试日志
+        \Log::info('Toggle favorite request received', [
+            'id' => $id,
+            'user' => auth()->user() ? auth()->user()->id : 'guest',
+            'session_has_mock_user' => session()->has('mock_user'),
+            'is_ajax' => request()->ajax(),
+            'wants_json' => request()->wantsJson(),
+            'content_type' => request()->header('Content-Type')
+        ]);
+        
+        // 简化响应结构
+        $isFavorite = false;
+        $success = true;
+        $message = '';
+        
         // Get the current user
         $user = auth()->user();
         
@@ -116,16 +131,6 @@ class PostController extends Controller
             
             // Store updated favorites in session
             session()->put('user_favorites', $favorites);
-            
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $message,
-                    'isFavorite' => $isFavorite
-                ]);
-            }
-            
-            return redirect()->back()->with('success', $message);
         } 
         // For database-based auth when implemented
         else if ($user) {
@@ -139,27 +144,20 @@ class PostController extends Controller
                 $message = 'Post added to favorites';
                 $isFavorite = true;
             }
-            
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $message,
-                    'isFavorite' => $isFavorite
-                ]);
-            }
-            
-            return redirect()->back()->with('success', $message);
         } else {
             // User not logged in
-            if (request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please login to favorite posts'
-                ], 401);
-            }
-            
-            return redirect()->route('login')->with('error', 'Please login to favorite posts');
+            return response()->json([
+                'success' => false,
+                'message' => 'Please login to favorite posts'
+            ], 401);
         }
+
+        // Return JSON response
+        return response()->json([
+            'success' => $success,
+            'message' => $message,
+            'isFavorite' => $isFavorite
+        ]);
     }
     
     /**

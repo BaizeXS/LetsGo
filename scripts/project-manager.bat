@@ -1,13 +1,12 @@
 @echo off
-REM Windows批处理脚本，用于执行project-manager.sh
+REM Windows batch script for executing project-manager.sh
 
-REM 检查是否安装了Git Bash
-where bash >nul 2>nul
-if %ERRORLEVEL% neq 0 (
-    echo 错误: 未找到bash命令。请确保Git Bash已安装。
-    echo 您可以从 https://git-scm.com/downloads 下载Git for Windows。
+REM Check if Git Bash is installed
+where bash >nul 2>nul || (
+    echo Error: bash command not found. Please make sure Git Bash is installed.
+    echo You can download Git for Windows from https://git-scm.com/downloads.
     exit /b 1
 )
 
-REM 执行bash脚本
-bash "%~dp0project-manager.sh" %* 
+REM Execute bash script
+bash ./scripts/project-manager.sh %* 

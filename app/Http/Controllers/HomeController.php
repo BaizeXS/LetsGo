@@ -522,88 +522,150 @@ class HomeController extends Controller
     {
         // Get search query
         $query = $request->input('query');
-        
+
         // If no query is provided, return empty array
         if (empty($query)) {
             return response()->json(['posts' => []]);
         }
-        
+
         $posts = [];
         $useMockData = true;
-        
+
         // 检查数据库连接和配置，只有确认可以连接时才尝试数据库查询
         if (config('app.use_database', false)) {
             try {
                 // 尝试连接数据库但不执行查询
-                \DB::connection()->getPdo();
+                \DB::connection()->getPdo();   
                 $useMockData = false;
             } catch (\Exception $e) {
                 // 连接失败，使用模拟数据
                 $useMockData = true;
             }
         }
-        
+
         if (!$useMockData) {
             try {
                 // 数据库连接成功，尝试查询
-                $posts = Post::where(function($q) use ($query) {
-                    $q->where('title', 'like', "%{$query}%")
-                      ->orWhere('content', 'like', "%{$query}%")
-                      ->orWhere('destination', 'like', "%{$query}%")
-                      ->orWhere('duration', 'like', "%{$query}%");
-                    
-                    // Search in JSON tags field - 使用更安全的方式检查JSON标签
-                    $q->orWhereRaw("JSON_CONTAINS(LOWER(tags), LOWER(?))", ['"' . strtolower($query) . '"']);
-                })
-                ->with('user')
-                ->limit(8)
-                ->get()
-                ->map(function($post) {
-                    // Format post data for view
-                    return [
-                        'id' => $post->id,
-                        'title' => $post->title,
-                        'cover_image' => $post->cover_image,
-                        'duration' => $post->duration,
-                        'cost' => $post->cost ?? null,
-                        'destination' => $post->destination,
-                        'user' => [
-                            'name' => $post->user->name,
-                            'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
-                        ],
-                        'views' => $post->views,
-                        'likes' => $post->likes,
-                        'comments' => $post->comments_count,
-                    ];
-                })
-                ->toArray();
+                // 使用Post模型中的scopeSearch方法
+                $posts = Post::search($query)
+                    ->with('user')
+                    ->limit(8)
+                    ->get()
+                    ->map(function($post) use ($query) {
+                        // 准备摘要内容 - 尝试在内容中找到匹配项周围的文本
+                        $excerpt = '';
+                        if (isset($post->content)) {
+                            // 找到内容中第一个匹配查询的位置
+                            $pos = stripos($post->content, $query);
+                            if ($pos !== false) {
+                                // 获取匹配周围的文本片段
+                                $start = max(0, $pos - 50);
+                                $length = strlen($query) + 100; // 查询词 + 前后各50个字符
+                                $excerpt = substr($post->content, $start, $length);
+                                
+                                // 如果摘要不是从头开始，添加省略号
+                                if ($start > 0) {
+                                    $excerpt = '...' . $excerpt;
+                                }
+                                
+                                // 如果摘要不是到内容结束，添加省略号
+                                if ($start + $length < strlen($post->content)) {
+                                    $excerpt .= '...';
+                                }
+                            } else {
+                                // 如果在内容中找不到匹配项，使用内容开头作为摘要
+                                $excerpt = substr($post->content, 0, 100) . '...';
+                            }
+                        }
+                        
+                        // Format post data for view
+                        return [
+                            'id' => $post->id,
+                            'title' => $post->title,
+                            'excerpt' => $excerpt,
+                            'cover_image' => $post->cover_image,
+                            'duration' => $post->duration,
+                            'cost' => $post->cost ?? null,
+                            'destination' => $post->destination,
+                            'user' => [
+                                'name' => $post->user->name,
+                                'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
+                            ],
+                            'views' => $post->views,
+                            'likes' => $post->likes,
+                            'comments' => $post->comments_count,
+                        ];
+                    })
+                    ->toArray();
             } catch (\Exception $e) {
                 // 查询失败，使用模拟数据
                 $useMockData = true;
+                \Log::error('Database search failed: ' . $e->getMessage());
             }
         }
-        
+
         // 如果数据库连接或查询失败，使用模拟数据
         if ($useMockData) {
             // Get dummy posts
-        $allPosts = $this->getDummyPosts();
-            
+            $allPosts = $this->getDummyPosts();
+
             // Filter posts based on search term
-            $posts = array_filter($allPosts, function($post) use ($query) {
+            $filteredPosts = array_filter($allPosts, function($post) use ($query) {
                 $query = strtolower($query);
+
+                // 检查标题中是否包含查询词
+                $titleMatch = strpos(strtolower($post['title']), $query) !== false;
                 
-                // Check if query exists in title, destination, or content
-                return strpos(strtolower($post['title']), $query) !== false ||
-                    (isset($post['destination']) && strpos(strtolower($post['destination']), $query) !== false) ||
-                    (isset($post['content']) && strpos(strtolower($post['content']), $query) !== false);
+                // 检查目的地中是否包含查询词
+                $destinationMatch = isset($post['destination']) && 
+                    strpos(strtolower($post['destination']), $query) !== false;
+                
+                // 检查内容中是否包含查询词
+                $contentMatch = isset($post['content']) && 
+                    strpos(strtolower($post['content']), $query) !== false;
+                
+                // 如果任何一个匹配，返回true
+                return $titleMatch || $destinationMatch || $contentMatch;
             });
-            
-            $posts = array_values($posts);
-            
+
+            $posts = array_values($filteredPosts);
+
+            // 为模拟数据添加摘要
+            foreach ($posts as &$post) {
+                // 如果没有内容，使用标题作为内容的一部分
+                if (!isset($post['content'])) {
+                    $post['content'] = "Travel notes about {$post['title']}. Amazing experience in {$post['destination']}.";
+                }
+                
+                // 找到内容中第一个匹配查询的位置
+                $pos = stripos($post['content'], $query);
+                if ($pos !== false) {
+                    // 获取匹配周围的文本片段
+                    $start = max(0, $pos - 50);
+                    $length = strlen($query) + 100; // 查询词 + 前后各50个字符
+                    $excerpt = substr($post['content'], $start, $length);
+                    
+                    // 如果摘要不是从头开始，添加省略号
+                    if ($start > 0) {
+                        $excerpt = '...' . $excerpt;
+                    }
+                    
+                    // 如果摘要不是到内容结束，添加省略号
+                    if ($start + $length < strlen($post['content'])) {
+                        $excerpt .= '...';
+                    }
+                } else {
+                    // 如果在内容中找不到匹配项，使用内容开头作为摘要
+                    $excerpt = substr($post['content'], 0, 100) . '...';
+                }
+                
+                $post['excerpt'] = $excerpt;
+            }
+
             // Limit to 8 results
             $posts = array_slice($posts, 0, 8);
         }
-        
+
         // Get user favorites
         $userFavorites = [];
         if (auth()->check()) {
@@ -611,18 +673,18 @@ class HomeController extends Controller
                 $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
             } catch (\Exception $e) {
                 // 如果获取收藏失败，忽略错误继续执行
-                $userFavorites = [];
+                $userFavorites = []; 
             }
         } elseif (session()->has('mock_user')) {
             $userFavorites = session()->get('user_favorites', []);
         }
-        
+
         // Mark favorites
         foreach ($posts as &$post) {
             $post['is_favorite'] = in_array($post['id'], $userFavorites);
         }
-        
-        return response()->json(['posts' => $posts]);
+
+        return response()->json(['posts' => $posts, 'query' => $query]);
     }
     
     /**

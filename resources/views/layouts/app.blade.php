@@ -4,26 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LetsGO - Travel Notes Sharing Platform</title>
-    <!-- 引入jQuery -->
+    <!-- Import jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <!-- 引入Tailwind CSS -->
+    <!-- Import Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- 引入Font Awesome -->
+    <!-- Import Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- 引入腾讯地图API -->
+    <!-- Import Tencent Map API -->
     <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key={{ env('TENCENT_MAP_KEY', '') }}"></script>
-    <!-- 自定义CSS -->
+    <!-- Custom CSS -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    <!-- 在head部分添加meta标签，用于CSRF保护 -->
+    <!-- Add meta tag in head section for CSRF protection -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @yield('styles')
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
-    <!-- 顶部导航栏 -->
+    <!-- Top navigation bar -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
-                <!-- 搜索栏 -->
+                <!-- Search bar -->
                 <div class="relative w-full max-w-md" id="search-container">
                     <form action="{{ route('search') }}" method="GET" id="search-form">
                         <div class="flex items-center border border-gray-300 rounded-full overflow-hidden">
@@ -35,7 +35,7 @@
                     </form>
                 </div>
                 
-                <!-- 右侧图标 -->
+                <!-- Right side icons -->
                 <div class="flex space-x-4 items-center">
                     <button id="open-map-btn" class="text-yellow-500"><i class="fas fa-compass text-xl"></i></button>
                     
@@ -109,20 +109,20 @@
         </div>
     </div>
 
-    <!-- 主要内容 -->
+    <!-- Main content -->
     <main class="flex-grow container mx-auto px-4 py-6">
         @yield('content')
     </main>
 
     @if(config('app.env') === 'local')
-    <!-- 调试信息区域 - 仅在开发环境中显示 -->
+    <!-- Debug information area - only shown in development environment -->
     <div class="bg-gray-100 border-t border-gray-200 py-2 text-xs text-gray-500 text-center">
-        认证状态: @if(isset($isAuthenticated) && $isAuthenticated) 已登录 ({{ $authUser['email'] }}) @else 未登录 @endif | 
-        当前路由: {{ Route::currentRouteName() }}
+        Authentication status: @if(isset($isAuthenticated) && $isAuthenticated) Logged in ({{ $authUser['email'] }}) @else Not logged in @endif | 
+        Current route: {{ Route::currentRouteName() }}
     </div>
     @endif
 
-    <!-- 底部导航栏 -->
+    <!-- Bottom navigation bar -->
     <footer class="bg-white border-t border-gray-200 sticky bottom-0 z-50">
         <div class="container mx-auto">
             <div class="flex justify-around items-center py-3">
@@ -178,10 +178,10 @@
             
             // Initialize map
             function initMap() {
-                // 默认中心位置 - 北京
+                // Default center position - Beijing
                 const defaultCenter = new qq.maps.LatLng(39.9042, 116.4074);
                 
-                // 创建地图实例
+                // Create map instance
                 map = new qq.maps.Map(mapElement, {
                     center: defaultCenter,
                     zoom: 11,
@@ -191,10 +191,10 @@
                     scaleControl: true
                 });
                 
-                // 创建地点搜索服务
+                // Create place search service
                 searchService = new qq.maps.SearchService({
                     complete: function(results) {
-                        // 搜索完成回调
+                        // Search completion callback
                         if (results && results.detail.pois.length > 0) {
                             const place = results.detail.pois[0];
                             const location = {
@@ -203,35 +203,35 @@
                                 lng: place.latLng.lng
                             };
                             
-                            // 清除之前的标记
+                            // Clear previous markers
                             clearMarkers();
                             
-                            // 移动地图到搜索结果位置
+                            // Move map to search result location
                             map.setCenter(new qq.maps.LatLng(location.lat, location.lng));
                             map.setZoom(14);
                             
-                            // 添加新标记
+                            // Add new marker
                             addMarker(location);
                         }
                     }
                 });
                 
-                // 创建地理编码服务，用于坐标和地址转换
+                // Create geocoding service for coordinate and address conversion
                 geocoder = new qq.maps.Geocoder();
                 
-                // 添加默认的热门旅游地标记
+                // Add default popular tourist spot markers
                 addDefaultMarkers();
             }
             
-            // 添加热门旅游目的地标记
+            // Add popular tourist destination markers
             function addDefaultMarkers() {
                 const popularDestinations = [
-                    { name: "北京故宫", lat: 39.9163, lng: 116.3972 },
-                    { name: "上海外滩", lat: 31.2304, lng: 121.4912 },
-                    { name: "西安兵马俑", lat: 34.3841, lng: 109.2785 },
-                    { name: "广州塔", lat: 23.1066, lng: 113.3214 },
-                    { name: "深圳世界之窗", lat: 22.5347, lng: 113.9740 },
-                    { name: "杭州西湖", lat: 30.2590, lng: 120.1388 }
+                    { name: "Beijing Forbidden City", lat: 39.9163, lng: 116.3972 },
+                    { name: "Shanghai Bund", lat: 31.2304, lng: 121.4912 },
+                    { name: "Xi'an Terracotta Army", lat: 34.3841, lng: 109.2785 },
+                    { name: "Guangzhou Tower", lat: 23.1066, lng: 113.3214 },
+                    { name: "Shenzhen Window of the World", lat: 22.5347, lng: 113.9740 },
+                    { name: "Hangzhou West Lake", lat: 30.2590, lng: 120.1388 }
                 ];
                 
                 popularDestinations.forEach(destination => {
@@ -239,23 +239,23 @@
                 });
             }
             
-            // 添加标记到地图
+            // Add marker to map
             function addMarker(location) {
                 const position = new qq.maps.LatLng(location.lat, location.lng);
                 
-                // 创建标记
+                // Create marker
                 const marker = new qq.maps.Marker({
                     position: position,
                     map: map,
                     title: location.name
                 });
                 
-                // 创建信息窗口
+                // Create info window
                 const info = new qq.maps.InfoWindow({
                     map: map
                 });
                 
-                // 设置信息窗口内容
+                // Set info window content
                 const infoContent = document.createElement('div');
                 infoContent.innerHTML = `
                     <div class="p-2" style="width: 200px;">
@@ -266,13 +266,13 @@
                     </div>
                 `;
                 
-                // 添加标记点击事件
+                // Add marker click event
                 qq.maps.event.addListener(marker, 'click', function() {
                     info.open();
                     info.setContent(infoContent);
                     info.setPosition(position);
                     
-                    // 添加显示旅行笔记按钮点击事件
+                    // Add show travel notes button click event
                     setTimeout(() => {
                         const loadPostsBtn = document.getElementById(`load-posts-${location.lat}-${location.lng}`);
                         if (loadPostsBtn) {
@@ -287,7 +287,7 @@
                 return marker;
             }
             
-            // 清除所有标记
+            // Clear all markers
             function clearMarkers() {
                 markers.forEach(marker => {
                     marker.setMap(null);
@@ -295,23 +295,23 @@
                 markers = [];
             }
             
-            // 搜索地点
+            // Search place
             function searchPlace(query) {
-                // 使用腾讯地图搜索服务
+                // Use Tencent Map search service
                 searchService.search(query);
             }
             
-            // 加载指定位置的旅行笔记
+            // Load travel notes for specified location
             function loadPostsForLocation(locationName) {
                 const mapPostsTitle = document.getElementById('map-posts-title');
                 const mapPostsCount = document.getElementById('map-posts-count');
                 const mapPostsPlaceholder = document.getElementById('map-posts-placeholder');
                 const mapPostsList = document.getElementById('map-posts-list');
                 
-                // 更新标题
+                // Update title
                 mapPostsTitle.textContent = `Travel Posts for ${locationName}`;
                 
-                // 显示加载状态
+                // Show loading status
                 mapPostsPlaceholder.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full">
                         <i class="fas fa-spinner fa-spin text-yellow-500 text-4xl mb-2"></i>
@@ -321,15 +321,15 @@
                 mapPostsPlaceholder.classList.remove('hidden');
                 mapPostsList.classList.add('hidden');
                 
-                // 获取该位置的旅行笔记
+                // Get travel notes for this location
                 fetch(`/api/posts/location?location=${encodeURIComponent(locationName)}`)
                     .then(response => response.json())
                     .then(posts => {
-                        // 更新笔记数量
+                        // Update note count
                         mapPostsCount.textContent = `${posts.length} posts found`;
                         
                         if (posts.length === 0) {
-                            // 显示无笔记消息
+                            // Show no notes message
                             mapPostsPlaceholder.innerHTML = `
                                 <div class="flex flex-col items-center justify-center h-full text-gray-500">
                                     <i class="fas fa-exclamation-circle text-4xl mb-2"></i>
@@ -340,7 +340,7 @@
                             mapPostsPlaceholder.classList.remove('hidden');
                             mapPostsList.classList.add('hidden');
                         } else {
-                            // 生成笔记列表HTML
+                            // Generate notes list HTML
                             mapPostsList.innerHTML = posts.map(post => `
                                 <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
                                     <a href="/posts/${post.id}" class="block">
@@ -375,28 +375,28 @@
                     });
             }
             
-            // 打开地图模态框
+            // Open map modal
             openMapBtn.addEventListener('click', function() {
                 mapModal.classList.remove('hidden');
-                // 如果地图尚未初始化，则初始化
+                // If map is not initialized, initialize
                 if (!map) {
                     initMap();
                 }
             });
             
-            // 关闭地图模态框
+            // Close map modal
             closeMapBtn.addEventListener('click', function() {
                 mapModal.classList.add('hidden');
             });
             
-            // 点击模态框外部区域关闭
+            // Click outside modal area to close
             mapModal.addEventListener('click', function(e) {
                 if (e.target === mapModal) {
                     mapModal.classList.add('hidden');
                 }
             });
             
-            // 处理搜索按钮点击
+            // Handle search button click
             searchBtn.addEventListener('click', function() {
                 const query = searchInput.value.trim();
                 if (query) {
@@ -404,7 +404,7 @@
                 }
             });
             
-            // 处理搜索框回车键
+            // Handle search box enter key
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     /**
-     * 显示登录表单
+     * Display login form
      */
     public function loginForm(Request $request)
     {
@@ -21,13 +21,13 @@ class AuthController extends Controller
     }
     
     /**
-     * 处理登录请求
+     * Handle login request
      */
     public function login(Request $request)
     {
-        // 检查是否在不使用数据库模式下运行
+        // Check if running in no-database mode
         if (!config('app.use_database', false)) {
-            // 模拟登录流程
+            // Mock login process
             session(['mock_user' => [
                 'id' => 1,
                 'name' => $request->email,
@@ -43,7 +43,7 @@ class AuthController extends Controller
                 'is_mock' => true
             ]]);
             
-            // 检查是否有重定向参数
+            // Check if there's a redirect parameter
             if ($request->has('redirect')) {
                 return redirect($request->redirect);
             }
@@ -68,12 +68,12 @@ class AuthController extends Controller
         }
         
         return back()->withErrors([
-            'email' => '提供的凭据不匹配我们的记录。',
+            'email' => 'The provided credentials do not match our records.',
         ])->withInput($request->except('password'));
     }
     
     /**
-     * 显示注册表单
+     * Display registration form
      */
     public function registerForm(Request $request)
     {
@@ -83,15 +83,15 @@ class AuthController extends Controller
     }
     
     /**
-     * 处理注册请求
+     * Handle registration request
      */
     public function register(Request $request)
     {
-        // 检查是否在不使用数据库模式下运行
+        // Check if running in no-database mode
         if (!config('app.use_database', false)) {
-            // 模拟用户注册 - 直接跳转到登录页面
+            // Mock user registration - redirect to login page
             return redirect()->route('login')
-                ->with('success', '注册成功！请使用您的账号和密码登录。')
+                ->with('success', 'Registration successful! Please login with your account and password.')
                 ->with('email', $request->email);
         }
         
@@ -107,18 +107,18 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
         
-        // 不自动登录用户，而是跳转到登录页面
+        // Don't automatically log in the user, redirect to login page instead
         return redirect()->route('login')
-            ->with('success', '注册成功！请使用您的账号和密码登录。')
+            ->with('success', 'Registration successful! Please login with your account and password.')
             ->with('email', $request->email);
     }
     
     /**
-     * 处理登出请求
+     * Handle logout request
      */
     public function logout(Request $request)
     {
-        // 清除模拟用户会话
+        // Clear mock user session
         if (session()->has('mock_user')) {
             session()->forget('mock_user');
         }

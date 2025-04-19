@@ -42,23 +42,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const cancelReply = document.getElementById('cancel-reply');
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        // 加载本地存储的评论
+        // Load locally stored comments
         const postId = {{ $post['id'] ?? 0 }};
         try {
             const storedComments = JSON.parse(localStorage.getItem('post_' + postId + '_comments') || '[]');
             const commentsList = document.getElementById('comments-list');
             
-            // 检查评论是否已经在页面上存在 (避免重复)
+            // Check if comments already exist on the page (avoid duplicates)
             if (storedComments.length > 0) {
-                // 获取已有评论的ID列表
+                // Get list of existing comment IDs
                 const existingCommentIds = Array.from(commentsList.querySelectorAll('.comment'))
                     .map(el => el.dataset.id);
                 
-                // 添加不存在的评论
+                // Add comments that don't exist yet
                 storedComments.forEach(comment => {
                     if (!existingCommentIds.includes(comment.id)) {
                         addNewComment(comment);
-                        // 更新评论计数
+                        // Update comment count
                         updateCommentCount(1);
                     }
                 });
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading comments from localStorage:', e);
         }
         
-        // 回复按钮点击
+        // Reply button click
         document.querySelectorAll('.comment-reply').forEach(button => {
             button.addEventListener('click', function() {
                 const commentId = this.getAttribute('data-id');
@@ -77,18 +77,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 replyToName.textContent = commenterName;
                 replyToDiv.classList.remove('hidden');
                 
-                // 滚动到评论表单
+                // Scroll to comment form
                 commentContent.focus();
             });
         });
         
-        // 取消回复
+        // Cancel reply
         cancelReply.addEventListener('click', function() {
             parentId.value = '';
             replyToDiv.classList.add('hidden');
         });
         
-        // 提交评论
+        // Submit comment
         commentForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -102,14 +102,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 _token: csrfToken
             };
             
-            // 显示加载状态
+            // Show loading state
             const submitButton = this.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Posting...';
             
-            // 添加本地模拟实现
-            // 当数据库连接失败时，使用这种模拟方式添加评论
+            // Add local mock implementation
+            // Use this mock method to add comments when database connection fails
             try {
                 // Generate a random ID for the comment
                 const mockCommentId = 'mock_' + Math.floor(Math.random() * 100000);
@@ -129,22 +129,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     user_liked: false
                 };
                 
-                // 添加评论到DOM
+                // Add comment to DOM
                 addNewComment(mockComment);
                 
-                // 更新评论计数
+                // Update comment count
                 updateCommentCount(1);
                 
-                // 清空表单
+                // Clear form
                 commentContent.value = '';
                 parentId.value = '';
                 replyToDiv.classList.add('hidden');
                 
-                // 恢复按钮状态
+                // Restore button state
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
                 
-                // 存储评论到 localStorage (作为持久化的简单方案)
+                // Store comment in localStorage (as a simple persistence solution)
                 try {
                     let storedComments = JSON.parse(localStorage.getItem('post_' + postId + '_comments') || '[]');
                     storedComments.unshift(mockComment);
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Error storing comment in localStorage:', e);
                 }
                 
-                // 如果数据库可用，尝试发送到服务器
+                // If database is available, try to send to server
                 fetch('/api/posts/' + postId + '/comments', {
                     method: 'POST',
                     headers: {
@@ -165,24 +165,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     if (!response.ok) {
-                        console.log('评论已通过本地存储添加，但服务器存储失败');
+                        console.log('Comment added via local storage, but server storage failed');
                         return null;
                     }
                     return response.json();
                 })
                 .catch(error => {
-                    console.log('评论已通过本地存储添加，但服务器连接失败:', error);
+                    console.log('Comment added via local storage, but server connection failed:', error);
                 });
             } catch (error) {
                 console.error('Error:', error);
-                // 恢复按钮状态
+                // Restore button state
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
-                alert('评论提交失败，请稍后重试');
+                alert('Comment submission failed, please try again later');
             }
         });
         
-        // 添加新评论到DOM
+        // Add new comment to DOM
         function addNewComment(comment) {
             const commentsList = document.getElementById('comments-list');
             
@@ -220,14 +220,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            // 添加到列表顶部
+            // Add to list top
             if (commentsList.firstChild) {
                 commentsList.insertBefore(commentElement, commentsList.firstChild);
             } else {
                 commentsList.appendChild(commentElement);
             }
             
-            // 添加事件监听器
+            // Add event listeners
             const likeButton = commentElement.querySelector('.comment-like');
             const replyButton = commentElement.querySelector('.comment-reply');
             const deleteButton = commentElement.querySelector('.comment-delete');
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
             deleteButton.addEventListener('click', handleCommentDelete);
         }
         
-        // 评论点赞处理
+        // Comment like handling
         function handleCommentLike() {
             const commentId = this.getAttribute('data-id');
             const likeIcon = this.querySelector('i');
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const isLiked = likeIcon.classList.contains('fas');
             const commentElement = this.closest('.comment');
             
-            // 先进行视觉反馈，再发送请求
+            // First do visual feedback, then send request
             if (!isLiked) {
                 likeIcon.classList.remove('far');
                 likeIcon.classList.add('fas', 'text-red-500');
@@ -258,10 +258,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 commentElement.dataset.userLiked = 'false';
             }
             
-            // 更新数据属性以保持状态一致
+            // Update data attribute to keep state consistent
             commentElement.dataset.likes = likeCount.textContent;
             
-            // 更新localStorage中的点赞状态
+            // Update localStorage like status
             try {
                 const postId = {{ $post['id'] ?? 0 }};
                 let storedComments = JSON.parse(localStorage.getItem('post_' + postId + '_comments') || '[]');
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error updating like in localStorage:', e);
             }
             
-            // 如果服务器可用，尝试更新点赞状态
+            // If server is available, try to update like status
             fetch(`/api/comments/${commentId}/like`, {
                 method: 'POST',
                 headers: {
@@ -288,18 +288,18 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (!response.ok) {
-                    console.log('点赞已通过本地存储更新，但服务器更新失败');
+                    console.log('Like updated via local storage, but server update failed');
                     return null;
                 }
                 return response.json();
             })
             .then(data => {
                 if (data && data.likes !== undefined) {
-                    // 如果服务器返回了明确的点赞数，以服务器为准
+                    // If server returns explicit like count, use server
                     likeCount.textContent = data.likes;
                     commentElement.dataset.likes = data.likes;
                     
-                    // 同时更新localStorage
+                    // Also update localStorage
                     try {
                         const postId = {{ $post['id'] ?? 0 }};
                         let storedComments = JSON.parse(localStorage.getItem('post_' + postId + '_comments') || '[]');
@@ -315,11 +315,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.log('点赞已通过本地存储更新，但服务器连接失败:', error);
+                console.log('Like updated via local storage, but server connection failed:', error);
             });
         }
         
-        // 回复评论处理
+        // Reply comment handling
         function handleCommentReply() {
             const commentId = this.getAttribute('data-id');
             const commenterName = this.closest('.comment').querySelector('.font-semibold').textContent;
@@ -331,20 +331,20 @@ document.addEventListener('DOMContentLoaded', function() {
             commentContent.focus();
         }
         
-        // 删除评论处理
+        // Delete comment handling
         function handleCommentDelete() {
-            if (!confirm('确定要删除这条评论吗？')) return;
+            if (!confirm('Are you sure you want to delete this comment?')) return;
             
             const commentId = this.getAttribute('data-id');
             const commentElement = this.closest('.comment');
             
-            // 先从DOM中移除评论
+            // First remove comment from DOM
             commentElement.remove();
             
-            // 更新评论计数
+            // Update comment count
             updateCommentCount(-1);
             
-            // 从localStorage中移除评论
+            // Remove comment from localStorage
             try {
                 const postId = {{ $post['id'] ?? 0 }};
                 let storedComments = JSON.parse(localStorage.getItem('post_' + postId + '_comments') || '[]');
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error removing comment from localStorage:', e);
             }
             
-            // 如果服务器可用，尝试从服务器删除
+            // If server is available, try to delete from server
             fetch(`/api/comments/${commentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -365,17 +365,17 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (!response.ok) {
-                    console.log('评论已通过本地存储删除，但服务器删除失败');
+                    console.log('Comment removed via local storage, but server delete failed');
                     return null;
                 }
                 return response.json();
             })
             .catch(error => {
-                console.log('评论已通过本地存储删除，但服务器连接失败:', error);
+                console.log('Comment removed via local storage, but server connection failed:', error);
             });
         }
         
-        // 更新评论计数
+        // Update comment count
         function updateCommentCount(change) {
             const commentsCount = document.getElementById('comments-count');
             if (commentsCount) {
@@ -383,17 +383,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 为现有评论添加事件监听器
+        // Add event listeners to existing comments
         document.querySelectorAll('.comment-like').forEach(button => {
             button.addEventListener('click', handleCommentLike);
             
-            // 确保点赞按钮显示正确的样式和数量
+            // Ensure like button shows correct style and count
             const commentElement = button.closest('.comment');
             const isLiked = commentElement.dataset.userLiked === 'true';
             const likeCount = commentElement.dataset.likes || '0';
             const likeIcon = button.querySelector('i');
             
-            // 更新点赞图标样式
+            // Update like icon style
             if (isLiked && !likeIcon.classList.contains('fas')) {
                 likeIcon.classList.remove('far');
                 likeIcon.classList.add('fas', 'text-red-500');
@@ -402,28 +402,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 likeIcon.classList.add('far');
             }
             
-            // 更新点赞计数
+            // Update like count
             const likeCountSpan = button.querySelector('.like-count');
             if (likeCountSpan) {
                 likeCountSpan.textContent = likeCount;
             }
         });
 
-        // 为现有评论添加删除按钮和事件监听器
+        // Add delete button and event listeners to existing comments
         document.querySelectorAll('.comment').forEach(comment => {
             const commentActions = comment.querySelector('.comment-actions');
-            if (!commentActions) return; // 确保元素存在
+            if (!commentActions) return; // Ensure element exists
             
             const likeButton = commentActions.querySelector('.comment-like');
-            if (!likeButton) return; // 确保元素存在
+            if (!likeButton) return; // Ensure element exists
             
             const commentId = likeButton.getAttribute('data-id');
             
-            // 添加删除按钮（仅对当前用户的评论）
+            // Add delete button (only for current user's comments)
             const currentUserId = '{{ Auth::id() ?? 0 }}';
             const commentUserId = comment.getAttribute('data-user-id') || '0';
             
-            // 确认删除按钮不存在才添加
+            // Add delete button only if it doesn't exist
             if ((currentUserId === commentUserId || currentUserId === '1') && !commentActions.querySelector('.comment-delete')) { 
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'comment-delete text-red-500';

@@ -20,35 +20,38 @@
     <!-- Card Content -->
     <div class="p-4">
         <!-- User Info -->
-        <div class="flex items-center mb-3">
-            <img src="{{ $post['user']['avatar'] }}" alt="{{ $post['user']['name'] }}" class="w-8 h-8 rounded-full mr-2">
-            <span class="text-sm text-gray-700">{{ $post['user']['name'] }}</span>
+        <div class="flex items-center mb-2">
+            <img src="{{ $post['user']['avatar'] }}" alt="{{ $post['user']['name'] }}" class="w-7 h-7 rounded-full mr-2">
+            <span class="text-xs text-gray-600 truncate">{{ $post['user']['name'] }}</span>
         </div>
         
         <!-- Title -->
         <a href="{{ route('posts.show', $post['id']) }}" class="block">
-            <h3 class="font-bold text-gray-900 mb-2 hover:text-red-500 transition">{{ $post['title'] }}</h3>
+            <h3 class="font-bold text-gray-900 mb-2 hover:text-red-500 transition text-sm line-clamp-2">{{ $post['title'] }}</h3>
         </a>
         
         <!-- Tags -->
         <div class="flex items-center text-xs text-gray-500 mb-3">
-            <span class="mr-3">{{ $post['duration'] }}</span>
+            <span class="px-2 py-1 bg-gray-100 rounded-full mr-2">{{ $post['duration'] }}</span>
             @if(isset($post['cost']))
-            <span>{{ $post['cost'] }}</span>
+            <span class="px-2 py-1 bg-gray-100 rounded-full">{{ $post['cost'] }}</span>
             @endif
         </div>
         
+        <!-- Divider -->
+        <div class="border-t border-gray-100 mb-2"></div>
+        
         <!-- Interaction Data -->
-        <div class="flex justify-between text-xs text-gray-500">
+        <div class="flex justify-between items-center text-xs text-gray-500">
             <div class="flex space-x-3">
-                <span><i class="far fa-eye mr-1"></i>{{ $post['views'] }}</span>
-                <span><i class="far fa-heart mr-1"></i>{{ $post['likes'] }}</span>
-                <span><i class="far fa-comment mr-1"></i>{{ $post['comments'] }}</span>
+                <span class="flex items-center"><i class="far fa-eye mr-1"></i>{{ $post['views'] }}</span>
+                <span class="flex items-center"><i class="far fa-heart mr-1"></i>{{ $post['likes'] }}</span>
+                <span class="flex items-center"><i class="far fa-comment mr-1"></i>{{ $post['comments'] }}</span>
             </div>
             
-            <!-- View Details Button -->
-            <a href="{{ route('posts.show', $post['id']) }}" class="text-xs text-red-500 hover:text-red-600 transition">
-                View Details <i class="fas fa-chevron-right ml-1 text-xs"></i>
+            <!-- Icon Only Link -->
+            <a href="{{ route('posts.show', $post['id']) }}" class="text-red-500 hover:text-red-600 transition hover:bg-gray-100 p-1 rounded-full">
+                <i class="fas fa-chevron-right text-xs"></i>
             </a>
         </div>
     </div>

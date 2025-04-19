@@ -1,121 +1,121 @@
 #!/bin/bash
 
-# 项目管理脚本
-# 用法: ./scripts/project-manager.sh [命令] [选项]
+# Project management script
+# Usage: ./scripts/project-manager.sh [command] [options]
 
-# 确保scripts目录存在
+# Ensure scripts directory exists
 mkdir -p $(dirname "$0")
 
-# 配置文件存储目录
+# Configuration file storage directory
 CONFIG_DIR="./config/environments"
 mkdir -p $CONFIG_DIR
 
-# 颜色定义
+# Color definitions
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# 帮助信息
+# Help information
 show_help() {
-    echo -e "${YELLOW}项目管理工具${NC}"
-    echo "用法: $0 [命令] [选项]"
+    echo -e "${YELLOW}Project Management Tool${NC}"
+    echo "Usage: $0 [command] [options]"
     echo ""
-    echo "可用命令:"
-    echo "  init [项目名称] --db-name=名称 --db-init --npm-install  - 初始化项目"
-    echo "  config list              - 列出所有可用配置"
-    echo "  config switch [名称]     - 切换到指定配置"
-    echo "  config save [名称]       - 保存当前配置"
-    echo "  dev start [项目名称]     - 启动开发服务器"
-    echo "  dev stop [项目名称]      - 停止开发服务器"
-    echo "  docker up                - 启动Docker容器"
-    echo "  docker down              - 停止Docker容器"
-    echo "  docker restart           - 重启Docker容器"
-    echo "  help                     - 显示帮助信息"
+    echo "Available commands:"
+    echo "  init [project_name] --db-name=name --db-init --npm-install  - Initialize project"
+    echo "  config list              - List all available configurations"
+    echo "  config switch [name]     - Switch to specified configuration"
+    echo "  config save [name]       - Save current configuration"
+    echo "  dev start [project_name] - Start development server"
+    echo "  dev stop [project_name]  - Stop development server"
+    echo "  docker up                - Start Docker containers"
+    echo "  docker down              - Stop Docker containers"
+    echo "  docker restart           - Restart Docker containers"
+    echo "  help                     - Show help information"
 }
 
-# 列出所有配置
+# List all configurations
 list_configs() {
-    echo -e "${YELLOW}可用配置:${NC}"
+    echo -e "${YELLOW}Available configurations:${NC}"
     if [ -d "$CONFIG_DIR" ]; then
         ls -1 "$CONFIG_DIR" | grep -v "README.md" | sed 's/\.env\.//'
     else
-        echo "没有找到配置目录"
+        echo "Configuration directory not found"
     fi
     
-    echo -e "\n${YELLOW}当前配置:${NC}"
+    echo -e "\n${YELLOW}Current configuration:${NC}"
     if [ -f ".env" ]; then
-        # 尝试从env文件中提取APP_NAME或自定义标识
+        # Try to extract APP_NAME or custom identifier from env file
         APP_NAME=$(grep "APP_NAME" .env | cut -d'=' -f2)
         if [ -n "$APP_NAME" ]; then
             echo "$APP_NAME"
         else
-            echo "默认配置（未命名）"
+            echo "Default configuration (unnamed)"
         fi
     else
-        echo "未找到.env文件"
+        echo ".env file not found"
     fi
 }
 
-# 切换配置
+# Switch configuration
 switch_config() {
     CONFIG_NAME=$1
     CONFIG_FILE="$CONFIG_DIR/.env.$CONFIG_NAME"
     
     if [ -z "$CONFIG_NAME" ]; then
-        echo -e "${RED}错误: 请指定配置名称${NC}"
+        echo -e "${RED}Error: Please specify a configuration name${NC}"
         list_configs
         return 1
     fi
     
     if [ -f "$CONFIG_FILE" ]; then
         cp "$CONFIG_FILE" .env
-        echo -e "${GREEN}已切换到配置: $CONFIG_NAME${NC}"
+        echo -e "${GREEN}Switched to configuration: $CONFIG_NAME${NC}"
         
-        # 询问是否重启Docker
-        read -p "是否重启Docker容器以应用新配置? (y/n): " restart
+        # Ask whether to restart Docker
+        read -p "Restart Docker containers to apply new configuration? (y/n): " restart
         if [[ $restart == "y" || $restart == "Y" ]]; then
             docker_restart
         fi
     else
-        echo -e "${RED}错误: 配置 '$CONFIG_NAME' 不存在${NC}"
+        echo -e "${RED}Error: Configuration '$CONFIG_NAME' does not exist${NC}"
         list_configs
         return 1
     fi
 }
 
-# 保存配置
+# Save configuration
 save_config() {
     CONFIG_NAME=$1
     
     if [ -z "$CONFIG_NAME" ]; then
-        echo -e "${RED}错误: 请指定配置名称${NC}"
+        echo -e "${RED}Error: Please specify a configuration name${NC}"
         return 1
     fi
     
     if [ ! -f ".env" ]; then
-        echo -e "${RED}错误: 没有找到.env文件${NC}"
+        echo -e "${RED}Error: .env file not found${NC}"
         return 1
     fi
     
     mkdir -p "$CONFIG_DIR"
     cp .env "$CONFIG_DIR/.env.$CONFIG_NAME"
-    echo -e "${GREEN}当前配置已保存为: $CONFIG_NAME${NC}"
+    echo -e "${GREEN}Current configuration saved as: $CONFIG_NAME${NC}"
 }
 
-# 初始化项目
+# Initialize project
 init_project() {
     PROJECT_NAME=$1
     shift
     
     if [ -z "$PROJECT_NAME" ]; then
-        echo -e "${RED}错误: 请指定项目名称${NC}"
+        echo -e "${RED}Error: Please specify a project name${NC}"
         return 1
     fi
     
-    echo -e "${YELLOW}初始化项目: $PROJECT_NAME${NC}"
+    echo -e "${YELLOW}Initializing project: $PROJECT_NAME${NC}"
     
-    # 解析额外参数
+    # Parse additional parameters
     DB_NAME="laravel"
     DB_INIT=false
     NPM_INSTALL=false
@@ -134,73 +134,73 @@ init_project() {
         esac
     done
     
-    # 创建或更新.env文件
+    # Create or update .env file
     if [ ! -f ".env.example" ]; then
-        echo -e "${RED}错误: 未找到.env.example文件${NC}"
+        echo -e "${RED}Error: .env.example file not found${NC}"
         return 1
     fi
     
     cp .env.example .env
     
-    # 更新APP_NAME
+    # Update APP_NAME
     sed -i "s/APP_NAME=.*/APP_NAME=$PROJECT_NAME/" .env
     
-    # 如果使用Docker，更新数据库配置
+    # If using Docker, update database configuration
     sed -i "s/DB_HOST=.*/DB_HOST=mariadb/" .env
     sed -i "s/DB_DATABASE=.*/DB_DATABASE=$DB_NAME/" .env
     sed -i "s/DB_USERNAME=.*/DB_USERNAME=root/" .env
     sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=root/" .env
     
-    # 保存配置
+    # Save configuration
     save_config $PROJECT_NAME
     
-    # 生成应用密钥
-    echo -e "${YELLOW}生成应用密钥...${NC}"
+    # Generate application key
+    echo -e "${YELLOW}Generating application key...${NC}"
     php artisan key:generate
     
-    # 初始化数据库
+    # Initialize database
     if [ "$DB_INIT" = true ]; then
-        echo -e "${YELLOW}执行数据库迁移...${NC}"
+        echo -e "${YELLOW}Executing database migration...${NC}"
         php artisan migrate:fresh --seed
     fi
     
-    # 安装npm依赖
+    # Install npm dependencies
     if [ "$NPM_INSTALL" = true ]; then
-        echo -e "${YELLOW}安装前端依赖...${NC}"
+        echo -e "${YELLOW}Installing frontend dependencies...${NC}"
         npm install
     fi
     
-    echo -e "${GREEN}项目 $PROJECT_NAME 初始化完成!${NC}"
+    echo -e "${GREEN}Project $PROJECT_NAME initialization completed!${NC}"
 }
 
-# 开发服务器管理
+# Development server management
 dev_start() {
     PROJECT_NAME=$1
     
     if [ -z "$PROJECT_NAME" ]; then
-        echo -e "${RED}错误: 请指定项目名称${NC}"
+        echo -e "${RED}Error: Please specify a project name${NC}"
         return 1
     fi
     
-    # 切换到对应配置
+    # Switch to corresponding configuration
     switch_config "$PROJECT_NAME"
     
-    echo -e "${YELLOW}启动开发服务器: $PROJECT_NAME${NC}"
+    echo -e "${YELLOW}Starting development server: $PROJECT_NAME${NC}"
     
-    # 使用Docker运行项目
+    # Use Docker to run project
     docker exec -it xampp-apache bash -c "cd /var/www/html && php artisan serve --host=0.0.0.0 --port=8000" &
     DEV_SERVER_PID=$!
     
-    # 启动npm
-    echo -e "${YELLOW}启动前端构建...${NC}"
+    # Start npm
+    echo -e "${YELLOW}Starting frontend build...${NC}"
     npm run dev &
     NPM_PID=$!
     
-    echo -e "${GREEN}开发服务器已启动${NC}"
-    echo "访问: http://localhost:8000"
-    echo "前端开发服务器运行在: http://localhost:5173"
+    echo -e "${GREEN}Development server started${NC}"
+    echo "Access: http://localhost:8000"
+    echo "Frontend development server running on: http://localhost:5173"
     
-    # 保存PID到临时文件
+    # Save PID to temporary file
     echo "$DEV_SERVER_PID" > .dev_server_pid
     echo "$NPM_PID" > .npm_pid
 }
@@ -208,9 +208,9 @@ dev_start() {
 dev_stop() {
     PROJECT_NAME=$1
     
-    echo -e "${YELLOW}停止开发服务器...${NC}"
+    echo -e "${YELLOW}Stopping development server...${NC}"
     
-    # 如果PID文件存在，杀掉进程
+    # If PID file exists, kill processes
     if [ -f ".dev_server_pid" ]; then
         DEV_SERVER_PID=$(cat .dev_server_pid)
         kill -9 $DEV_SERVER_PID 2>/dev/null
@@ -223,29 +223,29 @@ dev_stop() {
         rm .npm_pid
     fi
     
-    echo -e "${GREEN}开发服务器已停止${NC}"
+    echo -e "${GREEN}Development server stopped${NC}"
 }
 
-# Docker管理函数
+# Docker management functions
 docker_up() {
-    echo -e "${YELLOW}启动Docker容器...${NC}"
+    echo -e "${YELLOW}Starting Docker containers...${NC}"
     docker-compose up -d
-    echo -e "${GREEN}Docker容器已启动${NC}"
+    echo -e "${GREEN}Docker containers started${NC}"
 }
 
 docker_down() {
-    echo -e "${YELLOW}停止Docker容器...${NC}"
+    echo -e "${YELLOW}Stopping Docker containers...${NC}"
     docker-compose down
-    echo -e "${GREEN}Docker容器已停止${NC}"
+    echo -e "${GREEN}Docker containers stopped${NC}"
 }
 
 docker_restart() {
-    echo -e "${YELLOW}重启Docker容器...${NC}"
+    echo -e "${YELLOW}Restarting Docker containers...${NC}"
     docker-compose restart
-    echo -e "${GREEN}Docker容器已重启${NC}"
+    echo -e "${GREEN}Docker containers restarted${NC}"
 }
 
-# 主函数
+# Main function
 main() {
     if [ $# -eq 0 ]; then
         show_help
@@ -269,7 +269,7 @@ main() {
                     save_config $3
                     ;;
                 *)
-                    echo -e "${RED}错误: 未知的配置命令${NC}"
+                    echo -e "${RED}Error: Unknown configuration command${NC}"
                     show_help
                     return 1
                     ;;
@@ -284,7 +284,7 @@ main() {
                     dev_stop $3
                     ;;
                 *)
-                    echo -e "${RED}错误: 未知的开发服务器命令${NC}"
+                    echo -e "${RED}Error: Unknown development server command${NC}"
                     show_help
                     return 1
                     ;;
@@ -302,7 +302,7 @@ main() {
                     docker_restart
                     ;;
                 *)
-                    echo -e "${RED}错误: 未知的Docker命令${NC}"
+                    echo -e "${RED}Error: Unknown Docker command${NC}"
                     show_help
                     return 1
                     ;;
@@ -312,12 +312,12 @@ main() {
             show_help
             ;;
         *)
-            echo -e "${RED}错误: 未知命令 $1${NC}"
+            echo -e "${RED}Error: Unknown command $1${NC}"
             show_help
             return 1
             ;;
     esac
 }
 
-# 执行主函数
+# Execute main function
 main "$@" 

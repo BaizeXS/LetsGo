@@ -15,29 +15,29 @@ class UserController extends Controller
      */
     public function profile(Request $request, $username = null)
     {
-        // 检查应用是否配置为使用数据库
+        // Check if the application is configured to use a database
         $useDatabase = config('app.use_database', false);
         
-        // 如果是命名路由访问且没有提供username
+        // If accessed via named route and no username provided
         if ($username === null) {
-            // 检查用户是否已认证
+            // Check if user is authenticated
             if (Auth::check() && $useDatabase) {
                 $user = Auth::user();
             } elseif (session()->has('mock_user')) {
                 $user = session('mock_user');
             } else {
-                // 未登录则重定向到登录页面
-                return redirect()->route('login')->with('error', '请先登录以查看个人资料');
+                // Redirect to login page if not logged in
+                return redirect()->route('login')->with('error', 'Please login to view profile');
             }
         } else {
-            // 在使用数据库模式下，通过用户名查找用户
+            // In database mode, find user by username
             if ($useDatabase) {
                 $user = User::where('name', $username)->first();
             } else {
                 $user = null;
             }
             
-            // 如果用户不存在且在开发环境下，使用模拟数据
+            // If user doesn't exist and in development environment, use mock data
             if (!$user) {
                 $user = [
                     'id' => 1,
@@ -54,9 +54,9 @@ class UserController extends Controller
             }
         }
         
-        // 准备帖子数据
+        // Prepare post data
         if ($useDatabase && isset($user->id)) {
-            // 使用数据库获取帖子
+            // Get posts from database
             $pinnedPostIds = $user->pinned_posts ?? [];
             
             $pinnedPosts = Post::whereIn('id', $pinnedPostIds)->get();
@@ -67,7 +67,7 @@ class UserController extends Controller
                                 
             $posts = $pinnedPosts->merge($regularPosts);
         } else {
-            // 使用模拟数据
+            // Use mock data
             $posts = [
                 [
                     'id' => 1,
@@ -92,7 +92,7 @@ class UserController extends Controller
             ];
         }
         
-        // 确定是否是用户自己的资料页
+        // Determine if this is the user's own profile page
         $isOwner = false;
         if ($username) {
             $isOwner = (Auth::check() && Auth::user()->name === $username) || 
@@ -224,18 +224,18 @@ class UserController extends Controller
      */
     public function favorites()
     {
-        // 检查应用是否配置为使用数据库
+        // Check if the application is configured to use a database
         $useDatabase = config('app.use_database', false);
         
         if ($useDatabase && Auth::check()) {
             $user = Auth::user();
             $favorites = $user->favorites()->with('user')->latest()->get();
         } else {
-            // 使用模拟用户或模拟数据
+            // Use mock user or mock data
             if (session()->has('mock_user')) {
                 $user = session('mock_user');
                 
-                // 确保用户对象包含所有必要的字段
+                // Ensure user object contains all necessary fields
                 $defaultUser = [
                     'id' => 1,
                     'name' => $user['name'] ?? 'Travel Expert',
@@ -250,7 +250,7 @@ class UserController extends Controller
                     'following_count' => 325
                 ];
                 
-                // 合并默认值和会话中的值
+                // Merge default values with session values
                 $user = array_merge($defaultUser, $user);
                 
                 // Get favorite post IDs from session
@@ -266,8 +266,8 @@ class UserController extends Controller
                     }
                 }
             } else {
-                // 如果没有认证用户，重定向到登录页面
-                return redirect()->route('login')->with('error', '请先登录以查看收藏');
+                // If there's no authenticated user, redirect to login page
+                return redirect()->route('login')->with('error', 'Please login to view favorites');
             }
         }
         
@@ -364,7 +364,7 @@ class UserController extends Controller
         }
         
         if (!$user) {
-            return redirect()->route('login')->with('error', '请先登录以查看您的笔记');
+            return redirect()->route('login')->with('error', 'Please login to view your posts');
         }
         
         // Get user posts
@@ -418,25 +418,25 @@ class UserController extends Controller
      */
     public function followers($username = null)
     {
-        // 检查应用是否配置为使用数据库
+        // Check if the application is configured to use a database
         $useDatabase = config('app.use_database', false);
         
         if ($useDatabase) {
             if ($username) {
                 $user = User::where('name', $username)->first();
                 if (!$user) {
-                    abort(404, '用户不存在');
+                    abort(404, 'User does not exist');
                 }
             } else {
                 $user = Auth::user();
                 if (!$user) {
-                    return redirect()->route('login')->with('error', '请先登录以查看粉丝');
+                    return redirect()->route('login')->with('error', 'Please login to view followers');
                 }
             }
             
             $followers = $user->followers()->get();
         } else {
-            // 使用模拟数据
+            // Use mock data
             if ($username) {
                 $user = [
                     'id' => 2,
@@ -453,7 +453,7 @@ class UserController extends Controller
             } else if (session()->has('mock_user')) {
                 $user = session('mock_user');
                 
-                // 确保用户对象包含所有必要的字段
+                // Ensure user object contains all necessary fields
                 $defaultUser = [
                     'id' => 1,
                     'name' => $user['name'] ?? 'Travel Expert',
@@ -468,13 +468,13 @@ class UserController extends Controller
                     'following_count' => 325
                 ];
                 
-                // 合并默认值和会话中的值
+                // Merge default values with session values
                 $user = array_merge($defaultUser, $user);
             } else {
-                return redirect()->route('login')->with('error', '请先登录以查看粉丝');
+                return redirect()->route('login')->with('error', 'Please login to view followers');
             }
             
-            // 模拟粉丝数据
+            // Mock follower data
             $followers = [
                 [
                     'id' => 3,
@@ -491,7 +491,7 @@ class UserController extends Controller
             ];
         }
         
-        // 确定是否是用户自己的资料页
+        // Determine if this is the user's own profile page
         $isOwner = false;
         if ($username) {
             $isOwner = (Auth::check() && Auth::user()->name === $username) || 
@@ -512,25 +512,25 @@ class UserController extends Controller
      */
     public function following($username = null)
     {
-        // 检查应用是否配置为使用数据库
+        // Check if the application is configured to use a database
         $useDatabase = config('app.use_database', false);
         
         if ($useDatabase) {
             if ($username) {
                 $user = User::where('name', $username)->first();
                 if (!$user) {
-                    abort(404, '用户不存在');
+                    abort(404, 'User does not exist');
                 }
             } else {
                 $user = Auth::user();
                 if (!$user) {
-                    return redirect()->route('login')->with('error', '请先登录以查看关注');
+                    return redirect()->route('login')->with('error', 'Please login to view following');
                 }
             }
             
             $following = $user->following()->get();
         } else {
-            // 使用模拟数据
+            // Use mock data
             if ($username) {
                 $user = [
                     'id' => 2,
@@ -547,7 +547,7 @@ class UserController extends Controller
             } else if (session()->has('mock_user')) {
                 $user = session('mock_user');
                 
-                // 确保用户对象包含所有必要的字段
+                // Ensure user object contains all necessary fields
                 $defaultUser = [
                     'id' => 1,
                     'name' => $user['name'] ?? 'Travel Expert',
@@ -562,13 +562,13 @@ class UserController extends Controller
                     'following_count' => 325
                 ];
                 
-                // 合并默认值和会话中的值
+                // Merge default values with session values
                 $user = array_merge($defaultUser, $user);
             } else {
-                return redirect()->route('login')->with('error', '请先登录以查看关注');
+                return redirect()->route('login')->with('error', 'Please login to view following');
             }
             
-            // 模拟关注数据
+            // Mock following data
             $following = [
                 [
                     'id' => 5,
@@ -585,7 +585,7 @@ class UserController extends Controller
             ];
         }
         
-        // 确定是否是用户自己的资料页
+        // Determine if this is the user's own profile page
         $isOwner = false;
         if ($username) {
             $isOwner = (Auth::check() && Auth::user()->name === $username) || 

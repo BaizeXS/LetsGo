@@ -1,6 +1,6 @@
 # PowerShell Script for migrating files from LetsGo directory to root
 # Author: AI Assistant
-# Date: 当前日期
+# Date: Current date
 
 # Create backup directory if not exists
 if (-not (Test-Path -Path "./temp_backup/LetsGo_backup")) {
