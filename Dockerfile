@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# 安装系统依赖
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 配置 PHP 扩展
+# Configure PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql \
     mysqli \
@@ -35,10 +35,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     intl \
     opcache
 
-# 设置 PHP 配置文件
+# Set PHP configuration file
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
-# 安装 Node.js 和 npm
+# Install Node.js and npm
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get update \
     && apt-get install -y nodejs \
@@ -46,21 +46,21 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 Composer
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 启用 Apache 模块和配置
+# Enable Apache modules and configuration
 RUN a2enmod rewrite headers expires \
     && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
-# 设置工作目录
+# Set working directory
 WORKDIR /var/www/html
 
-# 设置适当的权限
+# Set appropriate permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# 暴露端口
+# Expose ports
 EXPOSE 80 443 5173 8000
 
-# 启动Apache
+# Start Apache
 CMD ["apache2-foreground"]

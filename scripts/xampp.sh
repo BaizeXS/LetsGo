@@ -1,71 +1,71 @@
 #!/bin/bash
-# XAMPP Docker 环境管理脚本
-# 用法: ./scripts/xampp.sh [命令]
+# XAMPP Docker Environment Management Script
+# Usage: ./scripts/xampp.sh [command]
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 帮助信息
+# Help information
 show_help() {
-    echo -e "${YELLOW}XAMPP Docker环境管理工具${NC}"
-    echo "用法: $0 [命令]"
+    echo -e "${YELLOW}XAMPP Docker Environment Management Tool${NC}"
+    echo "Usage: $0 [command]"
     echo ""
-    echo "可用命令:"
-    echo "  start       - 启动Docker环境"
-    echo "  stop        - 停止Docker环境"
-    echo "  restart     - 重启Docker环境"
-    echo "  status      - 查看Docker容器状态"
-    echo "  logs        - 查看Docker容器日志"
-    echo "  help        - 显示帮助信息"
+    echo "Available commands:"
+    echo "  start       - Start Docker environment"
+    echo "  stop        - Stop Docker environment"
+    echo "  restart     - Restart Docker environment"
+    echo "  status      - Check Docker container status"
+    echo "  logs        - View Docker container logs"
+    echo "  help        - Show help information"
 }
 
-# 启动Docker环境
+# Start Docker environment
 start_env() {
-    echo -e "${YELLOW}启动Docker环境...${NC}"
+    echo -e "${YELLOW}Starting Docker environment...${NC}"
     docker-compose up -d
-    echo -e "${GREEN}Docker环境已启动${NC}"
+    echo -e "${GREEN}Docker environment started${NC}"
     
-    # 显示容器状态
+    # Show container status
     docker-compose ps
     
-    echo -e "\n${GREEN}环境访问地址:${NC}"
-    echo "- 网站: http://localhost (或配置的WEB_PORT端口)"
-    echo "- phpMyAdmin: http://localhost:8080 (或配置的PMA_PORT端口)"
+    echo -e "\n${GREEN}Environment access addresses:${NC}"
+    echo "- Website: http://localhost (or configured WEB_PORT port)"
+    echo "- phpMyAdmin: http://localhost:8080 (or configured PMA_PORT port)"
 }
 
-# 停止Docker环境
+# Stop Docker environment
 stop_env() {
-    echo -e "${YELLOW}停止Docker环境...${NC}"
+    echo -e "${YELLOW}Stopping Docker environment...${NC}"
     docker-compose down
-    echo -e "${GREEN}Docker环境已停止${NC}"
+    echo -e "${GREEN}Docker environment stopped${NC}"
 }
 
-# 重启Docker环境
+# Restart Docker environment
 restart_env() {
-    echo -e "${YELLOW}重启Docker环境...${NC}"
+    echo -e "${YELLOW}Restarting Docker environment...${NC}"
     docker-compose restart
-    echo -e "${GREEN}Docker环境已重启${NC}"
+    echo -e "${GREEN}Docker environment restarted${NC}"
     
-    # 显示容器状态
+    # Show container status
     docker-compose ps
 }
 
-# 查看Docker容器状态
+# Check Docker container status
 status_env() {
-    echo -e "${YELLOW}Docker容器状态:${NC}"
+    echo -e "${YELLOW}Docker container status:${NC}"
     docker-compose ps
 }
 
-# 查看Docker容器日志
+# View Docker container logs
 logs_env() {
-    echo -e "${YELLOW}Docker容器日志:${NC}"
+    echo -e "${YELLOW}Docker container logs:${NC}"
     docker-compose logs
 }
 
-# 主函数
+# Main function
 main() {
     if [ $# -eq 0 ]; then
         show_help
@@ -92,12 +92,12 @@ main() {
             show_help
             ;;
         *)
-            echo -e "${RED}错误: 未知命令 $1${NC}"
+            echo -e "${RED}Error: Unknown command $1${NC}"
             show_help
             return 1
             ;;
     esac
 }
 
-# 执行主函数
+# Execute main function
 main "$@" 
