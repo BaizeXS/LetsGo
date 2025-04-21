@@ -1,12 +1,11 @@
 #!/bin/bash
-
 # XAMPP Docker 环境管理脚本
 # 用法: ./scripts/xampp.sh [命令]
 
 # 颜色定义
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # 帮助信息

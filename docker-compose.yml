@@ -40,7 +40,7 @@ services:
 
   # phpMyAdmin
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin # 使用官方的phpmyadmin镜像，适用于AMD64架构
+    image: arm64v8/phpmyadmin # Mac M系列芯片需要使用arm64v8版本的镜像, 其他版本请使用 phpmyadmin/phpmyadmin
     container_name: xampp-phpmyadmin
     ports:
       - "${PMA_PORT:-8080}:80"
