@@ -2,7 +2,7 @@
 
 @section('styles')
 <style>
-    /* Popup layer styles */
+    /* Post Detail Layout */
     .post-detail-modal {
         position: fixed;
         top: 0;
@@ -32,7 +32,7 @@
         padding: 1rem;
     }
     
-    /* Image carousel area */
+    /* Image Carousel */
     .image-slider {
         grid-column: 1;
         grid-row: 1;
@@ -95,15 +95,10 @@
         background-color: rgba(255, 255, 255, 0.8);
     }
     
-    .slider-prev {
-        left: 1rem;
-    }
+    .slider-prev { left: 1rem; }
+    .slider-next { right: 1rem; }
     
-    .slider-next {
-        right: 1rem;
-    }
-    
-    /* Content area */
+    /* Post Content */
     .post-content {
         grid-column: 2;
         grid-row: 1;
@@ -161,7 +156,7 @@
         line-height: 1.6;
     }
     
-    /* Route map area */
+    /* Route Map */
     .route-map {
         grid-column: 1;
         grid-row: 2;
@@ -170,7 +165,7 @@
         background-color: #f9fafb;
     }
     
-    /* Comments area */
+    /* Comments Section */
     .comments-section {
         grid-column: 2;
         grid-row: 2;
@@ -190,7 +185,7 @@
     .comments-list {
         overflow-y: auto;
         flex-grow: 1;
-        max-height: calc(100% - 80px); /* Reduce space occupied by comment box */
+        max-height: calc(100% - 80px);
         margin-bottom: 0.5rem;
     }
     
@@ -229,13 +224,7 @@
         color: #6b7280;
     }
     
-    .comment-form {
-        margin-top: 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
+    /* Responsive Layout */
     @media (max-width: 768px) {
         .post-detail-content {
             grid-template-columns: 1fr;
@@ -404,137 +393,162 @@
 
 @section('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Image carousel functionality
-        const sliderWrapper = document.getElementById('slider-wrapper');
-        const sliderDots = document.querySelectorAll('.slider-dot');
-        const prevBtn = document.querySelector('.slider-prev');
-        const nextBtn = document.querySelector('.slider-next');
-        let currentIndex = 0;
-        const totalSlides = sliderDots.length;
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const elements = {
+        sliderWrapper: document.getElementById('slider-wrapper'),
+        sliderDots: document.querySelectorAll('.slider-dot'),
+        prevBtn: document.querySelector('.slider-prev'),
+        nextBtn: document.querySelector('.slider-next'),
+        generateRouteBtn: document.getElementById('generate-route'),
+        routeMapElement: document.getElementById('route-map'),
+        likeBtn: document.getElementById('like-btn'),
+        favoriteBtn: document.getElementById('favorite-btn')
+    };
+    
+    // Image Carousel
+    initImageCarousel();
+    
+    // Route Map Generation
+    if (elements.generateRouteBtn) {
+        elements.generateRouteBtn.addEventListener('click', generateRouteMap);
+    }
+    
+    // Set initial button states
+    initButtonStates();
+    
+    // ===== Function Definitions =====
+    
+    // Initialize image carousel
+    function initImageCarousel() {
+        if (!elements.sliderWrapper) return;
         
-        // Update carousel position
+        let currentIndex = 0;
+        const totalSlides = elements.sliderDots.length;
+        
+        // Auto-advance carousel
+        const autoSlideInterval = setInterval(nextSlide, 5000);
+        
+        // Add event listeners
+        elements.sliderDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => goToSlide(index));
+        });
+        
+        if (elements.prevBtn) elements.prevBtn.addEventListener('click', prevSlide);
+        if (elements.nextBtn) elements.nextBtn.addEventListener('click', nextSlide);
+        
+        // Navigation functions
         function updateSlider() {
-            sliderWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
+            elements.sliderWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
             
             // Update indicators
-            sliderDots.forEach((dot, index) => {
-                if (index === currentIndex) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
+            elements.sliderDots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentIndex);
             });
         }
         
-        // Next image
+        function goToSlide(index) {
+            currentIndex = index;
+            updateSlider();
+        }
+        
         function nextSlide() {
             currentIndex = (currentIndex + 1) % totalSlides;
             updateSlider();
         }
         
-        // Previous image
         function prevSlide() {
             currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
             updateSlider();
         }
+    }
+    
+    // Generate route map
+    function generateRouteMap() {
+        // Show loading indicator
+        showMapLoadingState();
         
-        // Click indicator to switch image
-        sliderDots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                currentIndex = index;
-                updateSlider();
-            });
-        });
-        
-        // Click forward/back buttons
-        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
-        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
-        
-        // Automatically switch images every 5 seconds
-        setInterval(nextSlide, 5000);
-        
-        // Generate route map
-        document.getElementById('generate-route').addEventListener('click', function() {
-            const routeMapElement = document.getElementById('route-map');
-            
-            // Show loading
-            routeMapElement.innerHTML = `
-                <div class="p-4 h-full flex flex-col justify-center items-center">
-                    <i class="fas fa-spinner fa-spin text-4xl text-yellow-500 mb-4"></i>
-                    <p class="text-gray-500">Generating route map...</p>
-                </div>
-            `;
-            
-            // Call API to generate route map
-            fetch('/api/generate-route-map', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    post_id: {{ $post['id'] }},
-                    content: `{{ $post['content'] }}`
-                })
+        // Call API to generate route map
+        fetch('/api/generate-route-map', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                post_id: {{ $post['id'] }},
+                content: `{{ $post['content'] }}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    routeMapElement.innerHTML = `
-                        <div class="h-full">
-                            <img src="${data.map_url}" alt="Travel Route" class="w-full h-full object-contain">
-                        </div>
-                    `;
-                } else {
-                    routeMapElement.innerHTML = `
-                        <div class="p-4 h-full flex flex-col justify-center items-center">
-                            <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
-                            <p class="text-gray-500">Failed to generate route map</p>
-                            <button id="retry-generate" class="mt-4 bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition">
-                                Try Again
-                            </button>
-                        </div>
-                    `;
-                    
-                    document.getElementById('retry-generate').addEventListener('click', function() {
-                        document.getElementById('generate-route').click();
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                routeMapElement.innerHTML = `
-                    <div class="p-4 h-full flex flex-col justify-center items-center">
-                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
-                        <p class="text-gray-500">An error occurred. Please try again later.</p>
-                        <button id="retry-generate" class="mt-4 bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition">
-                            Try Again
-                        </button>
-                    </div>
-                `;
-                
-                document.getElementById('retry-generate').addEventListener('click', function() {
-                    document.getElementById('generate-route').click();
-                });
-            });
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMapSuccess(data.map_url);
+            } else {
+                showMapError();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMapError();
         });
-
+    }
+    
+    // Map state functions
+    function showMapLoadingState() {
+        elements.routeMapElement.innerHTML = `
+            <div class="p-4 h-full flex flex-col justify-center items-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-yellow-500 mb-4"></i>
+                <p class="text-gray-500">Generating route map...</p>
+            </div>
+        `;
+    }
+    
+    function showMapSuccess(mapUrl) {
+        elements.routeMapElement.innerHTML = `
+            <div class="h-full">
+                <img src="${mapUrl}" alt="Travel Route" class="w-full h-full object-contain">
+            </div>
+        `;
+    }
+    
+    function showMapError() {
+        elements.routeMapElement.innerHTML = `
+            <div class="p-4 h-full flex flex-col justify-center items-center">
+                <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                <p class="text-gray-500">Failed to generate route map</p>
+                <button id="retry-generate" class="mt-4 bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition">
+                    Try Again
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('retry-generate').addEventListener('click', generateRouteMap);
+    }
+    
+    // Initialize button states
+    function initButtonStates() {
         // Set like status
-        const likeBtn = document.getElementById('like-btn');
-        if (likeBtn && {{ isset($post['user_liked']) && $post['user_liked'] ? 'true' : 'false' }}) {
-            likeBtn.classList.add('liked');
-            likeBtn.querySelector('i').classList.remove('far');
-            likeBtn.querySelector('i').classList.add('fas');
+        if (elements.likeBtn && {{ isset($post['user_liked']) && $post['user_liked'] ? 'true' : 'false' }}) {
+            elements.likeBtn.classList.add('liked');
+            const icon = elements.likeBtn.querySelector('i');
+            if (icon) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            }
         }
 
         // Set favorite status
-        const favoriteBtn = document.getElementById('favorite-btn');
-        if (favoriteBtn && {{ isset($post['user_favorited']) && $post['user_favorited'] ? 'true' : 'false' }}) {
-            favoriteBtn.classList.add('favorited');
-            favoriteBtn.querySelector('i').classList.remove('far');
-            favoriteBtn.querySelector('i').classList.add('fas');
+        if (elements.favoriteBtn && {{ isset($post['user_favorited']) && $post['user_favorited'] ? 'true' : 'false' }}) {
+            elements.favoriteBtn.classList.add('favorited');
+            const icon = elements.favoriteBtn.querySelector('i');
+            if (icon) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            }
         }
-    });
+    }
+});
 </script>
+@endsection
 @endsection

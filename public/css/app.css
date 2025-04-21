@@ -1,4 +1,4 @@
-/* 全局样式 */
+/* Global Styles */
 :root {
     --primary-color: #ff385c;
     --secondary-color: #212121;
@@ -12,7 +12,7 @@ body {
     color: var(--secondary-color);
 }
 
-/* 导航栏样式 */
+/* Navigation Bar Styles */
 .categories-tabs-container {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */
@@ -22,7 +22,7 @@ body {
     display: none; /* Chrome, Safari, Opera */
 }
 
-/* 卡片样式 */
+/* Card Styles */
 .post-card {
     transition: transform 0.3s ease;
 }
@@ -31,7 +31,7 @@ body {
     transform: translateY(-4px);
 }
 
-/* 动画效果 */
+/* Animation Effects */
 @keyframes heart-beat {
     0% { transform: scale(1); }
     50% { transform: scale(1.2); }
@@ -42,7 +42,7 @@ body {
     animation: heart-beat 0.6s ease;
 }
 
-/* 响应式调整 */
+/* Responsive Adjustments */
 @media (max-width: 640px) {
     .grid {
         grid-template-columns: repeat(2, 1fr);
@@ -55,12 +55,12 @@ body {
     }
 }
 
-/* 底部导航栏 */
+/* Footer Navigation */
 footer a:hover {
     color: var(--primary-color);
 }
 
-/* 加载动画 */
+/* Loading Animation */
 .spinner {
     border: 3px solid var(--medium-gray);
     border-top: 3px solid var(--primary-color);

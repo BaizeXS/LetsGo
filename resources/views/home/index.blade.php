@@ -47,63 +47,67 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Search box functionality
-        const searchInput = document.querySelector('input[name="query"]');
-        const searchResultsDropdown = document.getElementById('search-results-dropdown');
-        const searchResultsList = document.getElementById('search-results-list');
-        const searchLoading = document.getElementById('search-loading');
-        const searchEmpty = document.getElementById('search-empty');
-        const searchContainer = document.getElementById('search-container');
+        // DOM elements
+        const elements = {
+            searchInput: document.querySelector('input[name="query"]'),
+            searchResultsDropdown: document.getElementById('search-results-dropdown'),
+            searchResultsList: document.getElementById('search-results-list'),
+            searchLoading: document.getElementById('search-loading'),
+            searchEmpty: document.getElementById('search-empty'),
+            searchContainer: document.getElementById('search-container'),
+            searchForm: document.getElementById('search-form'),
+            viewAllSection: document.getElementById('search-view-all'),
+            viewAllLink: document.getElementById('search-view-all-link'),
+            loadMoreBtn: document.getElementById('load-more'),
+            postsContainer: document.getElementById('posts-container')
+        };
+
+        // Initialize variables
+        let searchTimeout;
+        let page = 2;
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        // SEARCH FUNCTIONALITY
         
         // Position search results dropdown
         function positionDropdown() {
-            // Get search box position information
-            const rect = searchContainer.getBoundingClientRect();
-            
-            // Set dropdown position
-            searchResultsDropdown.style.position = 'fixed';
-            searchResultsDropdown.style.top = rect.bottom + 'px';
-            searchResultsDropdown.style.left = rect.left + 'px';
-            searchResultsDropdown.style.width = rect.width + 'px';
+            const rect = elements.searchContainer.getBoundingClientRect();
+            elements.searchResultsDropdown.style.position = 'fixed';
+            elements.searchResultsDropdown.style.top = rect.bottom + 'px';
+            elements.searchResultsDropdown.style.left = rect.left + 'px';
+            elements.searchResultsDropdown.style.width = rect.width + 'px';
         }
         
         // Reposition dropdown when window is resized
         window.addEventListener('resize', function() {
-            if (!searchResultsDropdown.classList.contains('hidden')) {
+            if (!elements.searchResultsDropdown.classList.contains('hidden')) {
                 positionDropdown();
             }
         });
         
-        let searchTimeout;
-
         // Listen for search input
-        searchInput.addEventListener('input', function() {
+        elements.searchInput.addEventListener('input', function() {
             const query = this.value.trim();
-            
-            // Clear previous timer
             clearTimeout(searchTimeout);
             
             if (query.length > 1) {
-                // Set timer to prevent frequent requests
-                searchTimeout = setTimeout(() => {
-                    performSearch(query);
-                }, 300);
+                searchTimeout = setTimeout(() => performSearch(query), 300);
             } else {
                 hideSearchResults();
             }
         });
 
-        // Prevent search form submission, show real-time search results instead
-        document.getElementById('search-form').addEventListener('submit', function(e) {
-            const query = searchInput.value.trim();
+        // Prevent search form submission for short queries
+        elements.searchForm.addEventListener('submit', function(e) {
+            const query = elements.searchInput.value.trim();
             if (query.length <= 1) {
                 e.preventDefault();
             }
         });
 
-        // Hide dropdown when clicking elsewhere on the document
+        // Hide dropdown when clicking elsewhere
         document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && !searchResultsDropdown.contains(e.target)) {
+            if (!elements.searchInput.contains(e.target) && !elements.searchResultsDropdown.contains(e.target)) {
                 hideSearchResults();
             }
         });
@@ -111,100 +115,88 @@
         // Perform search
         function performSearch(query) {
             // Show loading state
-            searchResultsDropdown.classList.remove('hidden');
+            elements.searchResultsDropdown.classList.remove('hidden');
             positionDropdown();
-            searchLoading.classList.remove('hidden');
-            searchEmpty.classList.add('hidden');
-            searchResultsList.innerHTML = '';
-            
-            // Hide view all link
-            const viewAllSection = document.getElementById('search-view-all');
-            viewAllSection.classList.add('hidden');
+            elements.searchLoading.classList.remove('hidden');
+            elements.searchEmpty.classList.add('hidden');
+            elements.searchResultsList.innerHTML = '';
+            elements.viewAllSection.classList.add('hidden');
             
             // Send AJAX request
             fetch(`/api/search?query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
-                    searchLoading.classList.add('hidden');
+                    elements.searchLoading.classList.add('hidden');
                     
                     if (data.posts.length === 0) {
-                        searchEmpty.classList.remove('hidden');
-                    } else {
-                        // Render search results
-                        data.posts.forEach(post => {
-                            const resultItem = document.createElement('div');
-                            resultItem.className = 'py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors';
-                            
-                            // Highlight matching text
-                            let highlightedTitle = post.title;
-                            if (data.query) {
-                                // Create regex to replace query with highlighted version
-                                const regex = new RegExp(`(${escapeRegExp(data.query)})`, 'gi');
-                                highlightedTitle = post.title.replace(regex, '<span class="bg-yellow-200">$1</span>');
-                            }
-                            
-                            // Highlight query words in excerpt
-                            let highlightedExcerpt = post.excerpt || '';
-                            if (data.query && highlightedExcerpt) {
-                                const regex = new RegExp(`(${escapeRegExp(data.query)})`, 'gi');
+                        elements.searchEmpty.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    // Render search results
+                    data.posts.forEach(post => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors';
+                        
+                        // Highlight matching text
+                        let highlightedTitle = post.title;
+                        let highlightedExcerpt = post.excerpt || '';
+                        
+                        if (data.query) {
+                            const regex = new RegExp(`(${escapeRegExp(data.query)})`, 'gi');
+                            highlightedTitle = post.title.replace(regex, '<span class="bg-yellow-200">$1</span>');
+                            if (highlightedExcerpt) {
                                 highlightedExcerpt = highlightedExcerpt.replace(regex, '<span class="bg-yellow-200">$1</span>');
                             }
-                            
-                            resultItem.innerHTML = `
-                                <a href="/posts/${post.id}" class="flex group">
-                                    <div class="w-20 h-20 bg-gray-200 rounded overflow-hidden mr-3 flex-shrink-0">
-                                        <img src="${post.cover_image}" alt="${post.title}" class="w-full h-full object-cover">
-                                    </div>
-                                    <div class="flex-1 overflow-hidden">
-                                        <h3 class="font-medium text-gray-900 text-sm group-hover:text-red-500 transition line-clamp-1">${highlightedTitle}</h3>
-                                        <p class="text-xs text-gray-500 mb-1">${post.destination || 'Unknown destination'} · ${post.user.name}</p>
-                                        <p class="text-xs text-gray-600 line-clamp-2">${highlightedExcerpt}</p>
-                                    </div>
-                                </a>
-                            `;
-                            searchResultsList.appendChild(resultItem);
-                        });
-                        
-                        // Show "View all" link
-                        if (data.posts.length >= 5) {
-                            viewAllSection.classList.remove('hidden');
-                            const viewAllLink = document.getElementById('search-view-all-link');
-                            viewAllLink.href = `/search?query=${encodeURIComponent(query)}`;
                         }
+                        
+                        resultItem.innerHTML = `
+                            <a href="/posts/${post.id}" class="flex group">
+                                <div class="w-20 h-20 bg-gray-200 rounded overflow-hidden mr-3 flex-shrink-0">
+                                    <img src="${post.cover_image}" alt="${post.title}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex-1 overflow-hidden">
+                                    <h3 class="font-medium text-gray-900 text-sm group-hover:text-red-500 transition line-clamp-1">${highlightedTitle}</h3>
+                                    <p class="text-xs text-gray-500 mb-1">${post.destination || 'Unknown destination'} · ${post.user.name}</p>
+                                    <p class="text-xs text-gray-600 line-clamp-2">${highlightedExcerpt}</p>
+                                </div>
+                            </a>
+                        `;
+                        elements.searchResultsList.appendChild(resultItem);
+                    });
+                    
+                    // Show "View all" link
+                    if (data.posts.length >= 5) {
+                        elements.viewAllSection.classList.remove('hidden');
+                        elements.viewAllLink.href = `/search?query=${encodeURIComponent(query)}`;
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching search results:', error);
-                    searchLoading.classList.add('hidden');
-                    searchEmpty.classList.remove('hidden');
-                    searchEmpty.textContent = 'Error loading search results';
+                    elements.searchLoading.classList.add('hidden');
+                    elements.searchEmpty.classList.remove('hidden');
+                    elements.searchEmpty.textContent = 'Error loading search results';
                 });
-        }
-
-        // Helper function: Escape special characters in regex
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
         // Hide search results
         function hideSearchResults() {
-            searchResultsDropdown.classList.add('hidden');
-            searchResultsList.innerHTML = '';
+            elements.searchResultsDropdown.classList.add('hidden');
+            elements.searchResultsList.innerHTML = '';
         }
 
-        // Generic favorite button event handler
+        // FAVORITE FUNCTIONALITY
+        
+        // Handle favorite button click
         function handleFavoriteClick(button) {
             const postId = button.getAttribute('data-post-id');
             const heartIcon = document.getElementById(`heart-${postId}`);
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             
             // Disable button to prevent repeated clicks
             button.disabled = true;
-            
-            // Show status before sending request
             showNotification('Processing...', 'info');
             
-            // Use simplified URL request method
+            // Send request to toggle favorite
             fetch(`/posts/${postId}/favorite`, {
                 method: 'POST',
                 headers: {
@@ -213,14 +205,7 @@
                 }
             })
             .then(response => {
-                // First check response status
-                const contentType = response.headers.get('content-type');
-                console.log('Response headers:', [...response.headers.entries()]);
-                console.log('Response status:', response.status);
-                console.log('Content type:', contentType);
-                
                 if (response.status === 401) {
-                    // User not logged in, redirect to login page
                     window.location.href = '/login';
                     throw new Error('Please login to favorite posts');
                 }
@@ -229,12 +214,7 @@
                     throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
                 }
                 
-                try {
-                    return response.json();
-                } catch (err) {
-                    console.error('JSON parsing error:', err);
-                    return { success: false, message: 'Invalid response from server' };
-                }
+                return response.json();
             })
             .then(data => {
                 if (data && data.success) {
@@ -243,308 +223,146 @@
                         heartIcon.classList.remove('far');
                         heartIcon.classList.add('fas');
                         button.setAttribute('data-is-favorite', 'true');
-                        
-                        // Show success notification
                         showNotification('Post added to favorites', 'success');
                     } else {
                         heartIcon.classList.remove('fas');
                         heartIcon.classList.add('far');
                         button.setAttribute('data-is-favorite', 'false');
-                        
-                        // Show success notification
                         showNotification('Post removed from favorites', 'success');
                     }
                 } else {
-                    // Handle unsuccessful response
                     showNotification(data?.message || 'Operation failed', 'error');
                 }
             })
             .catch(error => {
-                // Handle error
                 console.error('Error:', error);
                 showNotification(error.message || 'An error occurred', 'error');
             })
             .finally(() => {
-                // Re-enable button
                 button.disabled = false;
             });
         }
 
-        // Attach event listeners to all favorite buttons
+        // Attach event listeners to favorite buttons
         function attachFavoriteEvents() {
             const favoriteButtons = document.querySelectorAll('.favorite-btn:not([data-event-attached])');
             
             favoriteButtons.forEach(button => {
                 button.setAttribute('data-event-attached', 'true');
-                
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
-                    e.stopPropagation(); // Prevent event bubbling
+                    e.stopPropagation();
                     handleFavoriteClick(this);
                 });
             });
         }
 
-        // Initialize favorite buttons on the page
+        // Initialize favorite buttons
         attachFavoriteEvents();
         
-        // Notification helper function
+        // NOTIFICATION FUNCTIONALITY
+        
+        // Display notification message
         function showNotification(message, type = 'success') {
-            // Remove all existing notifications
+            // Remove existing notifications
             const existingNotifications = document.querySelectorAll('.notification-message');
-            existingNotifications.forEach(notification => {
-                notification.remove();
-            });
+            existingNotifications.forEach(notification => notification.remove());
             
+            // Create new notification
             const notification = document.createElement('div');
             notification.className = `notification-message fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white shadow-lg transition-opacity duration-500 z-50`;
             
             // Set background color based on type
-            switch (type) {
-                case 'success':
-                    notification.classList.add('bg-green-500');
-                    break;
-                case 'error':
-                    notification.classList.add('bg-red-500');
-                    break;
-                case 'info':
-                    notification.classList.add('bg-blue-500');
-                    break;
-                default:
-                    notification.classList.add('bg-gray-500');
-            }
+            const bgClasses = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500',
+                default: 'bg-gray-500'
+            };
             
+            notification.classList.add(bgClasses[type] || bgClasses.default);
             notification.innerHTML = message;
             document.body.appendChild(notification);
             
             // Auto remove after 3 seconds
             setTimeout(() => {
                 notification.style.opacity = '0';
-                setTimeout(() => {
-                    notification.remove();
-                }, 500);
+                setTimeout(() => notification.remove(), 500);
             }, 3000);
         }
         
-        // Load more global function
-        window.attachFavoriteEvents = attachFavoriteEvents;
-        window.showNotification = showNotification;
-    });
-
-    // Attach favorite events to new favorite buttons (for dynamic content loading)
-    function attachFavoriteEvents() {
-        const favoriteButtons = document.querySelectorAll('.favorite-btn:not([data-event-attached])');
+        // LOAD MORE FUNCTIONALITY
         
-        favoriteButtons.forEach(button => {
-            button.setAttribute('data-event-attached', 'true');
+        // Load more posts
+        elements.loadMoreBtn.addEventListener('click', function() {
+            elements.loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
             
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation(); // Prevent event bubbling
-                
-                const postId = this.getAttribute('data-post-id');
-                const heartIcon = document.getElementById(`heart-${postId}`);
-                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                
-                // Disable button to prevent repeated clicks
-                this.disabled = true;
-                
-                // Show status before sending request
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification('Processing...', 'info');
-                }
-                
-                // Send AJAX request to toggle favorite
-                fetch(`/posts/${postId}/favorite`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': token,
-                        'Accept': 'application/json',
-                    }
-                })
+            fetch(`/api/posts?page=${page}`)
                 .then(response => {
-                    // First check response status
-                    const contentType = response.headers.get('content-type');
-                    console.log('Response headers:', [...response.headers.entries()]);
-                    console.log('Response status:', response.status);
-                    console.log('Content type:', contentType);
-                    
-                    if (response.status === 401) {
-                        // User not logged in, redirect to login page
-                        window.location.href = '/login';
-                        throw new Error('Please login to favorite posts');
-                    }
-                    
                     if (!response.ok) {
-                        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+                        throw new Error('Network response was not ok');
                     }
-                    
-                    try {
-                        return response.json();
-                    } catch (err) {
-                        console.error('JSON parsing error:', err);
-                        return { success: false, message: 'Invalid response from server' };
-                    }
+                    return response.json();
                 })
                 .then(data => {
-                    if (data && data.success) {
-                        // Update heart icon
-                        if (data.isFavorite) {
-                            heartIcon.classList.remove('far');
-                            heartIcon.classList.add('fas');
-                            this.setAttribute('data-is-favorite', 'true');
+                    if (data.posts && data.posts.length > 0) {
+                        // Add new posts to container
+                        data.posts.forEach(post => {
+                            const postCard = document.createElement('div');
+                            postCard.className = 'post-card';
                             
-                            // Show success notification
-                            if (typeof window.showNotification === 'function') {
-                                window.showNotification('Post added to favorites', 'success');
-                            }
-                        } else {
-                            heartIcon.classList.remove('fas');
-                            heartIcon.classList.add('far');
-                            this.setAttribute('data-is-favorite', 'false');
+                            postCard.innerHTML = `
+                                <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                                    <a href="/posts/${post.id}">
+                                        <div class="relative pb-[66%]">
+                                            <img src="${post.cover_image}" alt="${post.title}" class="absolute inset-0 w-full h-full object-cover">
+                                        </div>
+                                    </a>
+                                    <div class="p-3">
+                                        <a href="/posts/${post.id}" class="block">
+                                            <h3 class="text-sm font-medium text-gray-900 truncate">${post.title}</h3>
+                                        </a>
+                                        <div class="flex justify-between items-center mt-2">
+                                            <div class="flex space-x-1 text-xs text-gray-500">
+                                                <span><i class="far fa-eye"></i> ${post.views}</span>
+                                                <span><i class="far fa-heart"></i> ${post.likes}</span>
+                                            </div>
+                                            <button class="favorite-btn text-xs text-gray-400" data-post-id="${post.id}" data-is-favorite="${post.is_favorite ? 'true' : 'false'}">
+                                                <i id="heart-${post.id}" class="${post.is_favorite ? 'fas' : 'far'} fa-heart"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
                             
-                            // Show success notification
-                            if (typeof window.showNotification === 'function') {
-                                window.showNotification('Post removed from favorites', 'success');
-                            }
-                        }
+                            elements.postsContainer.appendChild(postCard);
+                        });
+                        
+                        page++;
+                        elements.loadMoreBtn.textContent = 'Load More';
+                        attachFavoriteEvents();
                     } else {
-                        // Handle unsuccessful response
-                        if (typeof window.showNotification === 'function') {
-                            window.showNotification(data?.message || 'Operation failed', 'error');
-                        }
+                        elements.loadMoreBtn.textContent = 'All content loaded';
+                        elements.loadMoreBtn.disabled = true;
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    if (typeof window.showNotification === 'function') {
-                        window.showNotification(error.message || 'An error occurred', 'error');
-                    }
-                })
-                .finally(() => {
-                    // Re-enable button
-                    this.disabled = false;
+                    elements.loadMoreBtn.textContent = 'Error loading more content';
+                    showNotification('Failed to load more content: ' + error.message, 'error');
                 });
-            });
-        });
-    }
-    
-    // Helper function: Notification display (global available)
-    function showNotification(message, type = 'success') {
-        // If internal function exists, use internal function
-        if (typeof window.showNotification === 'function') {
-            window.showNotification(message, type);
-            return;
-        }
-        
-        // Remove all existing notifications
-        const existingNotifications = document.querySelectorAll('.notification-message');
-        existingNotifications.forEach(notification => {
-            notification.remove();
         });
         
-        const notification = document.createElement('div');
-        notification.className = `notification-message fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white shadow-lg transition-opacity duration-500 z-50`;
+        // HELPER FUNCTIONS
         
-        // Set background color based on type
-        switch (type) {
-            case 'success':
-                notification.classList.add('bg-green-500');
-                break;
-            case 'error':
-                notification.classList.add('bg-red-500');
-                break;
-            case 'info':
-                notification.classList.add('bg-blue-500');
-                break;
-            default:
-                notification.classList.add('bg-gray-500');
+        // Escape special characters in regex
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
         
-        notification.innerHTML = message;
-        document.body.appendChild(notification);
-        
-        // Auto remove after 3 seconds
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                notification.remove();
-            }, 500);
-        }, 3000);
-    }
-    
-    // Infinite scroll load
-    let page = 2;
-    const loadMoreBtn = document.getElementById('load-more');
-    
-    loadMoreBtn.addEventListener('click', function() {
-        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-        
-        // Send AJAX request to get more posts
-        fetch(`/api/posts?page=${page}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.posts && data.posts.length > 0) {
-                    // Add new posts to container
-                    const postsContainer = document.getElementById('posts-container');
-                    
-                    data.posts.forEach(post => {
-                        const postCard = document.createElement('div');
-                        postCard.className = 'post-card';
-                        
-                        // Note: Here we use a simplified version of the card template, adjust based on actual project
-                        postCard.innerHTML = `
-                            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                                <a href="/posts/${post.id}">
-                                    <div class="relative pb-[66%]">
-                                        <img src="${post.cover_image}" alt="${post.title}" class="absolute inset-0 w-full h-full object-cover">
-                                    </div>
-                                </a>
-                                <div class="p-3">
-                                    <a href="/posts/${post.id}" class="block">
-                                        <h3 class="text-sm font-medium text-gray-900 truncate">${post.title}</h3>
-                                    </a>
-                                    <div class="flex justify-between items-center mt-2">
-                                        <div class="flex space-x-1 text-xs text-gray-500">
-                                            <span><i class="far fa-eye"></i> ${post.views}</span>
-                                            <span><i class="far fa-heart"></i> ${post.likes}</span>
-                                        </div>
-                                        <button class="favorite-btn text-xs text-gray-400" data-post-id="${post.id}" data-is-favorite="${post.is_favorite ? 'true' : 'false'}">
-                                            <i id="heart-${post.id}" class="${post.is_favorite ? 'fas' : 'far'} fa-heart"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        postsContainer.appendChild(postCard);
-                    });
-                    
-                    page++;
-                    loadMoreBtn.textContent = 'Load More';
-                    
-                    // Attach favorite button event listeners
-                    if (typeof window.attachFavoriteEvents === 'function') {
-                        window.attachFavoriteEvents();
-                    } else {
-                        // Backup plan
-                        attachFavoriteEvents();
-                    }
-                } else {
-                    loadMoreBtn.textContent = 'All content loaded';
-                    loadMoreBtn.disabled = true;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                loadMoreBtn.textContent = 'Error loading more content';
-                showNotification('Failed to load more content: ' + error.message, 'error');
-            });
+        // Expose functions globally
+        window.showNotification = showNotification;
+        window.attachFavoriteEvents = attachFavoriteEvents;
     });
 </script>
 @endsection 

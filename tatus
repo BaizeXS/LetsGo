@@ -1,0 +1,5 @@
+git status 
+git remote -v 
+git add . 
+git commit -m "更新项目文件和视图" 
+git push origin master 

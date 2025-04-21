@@ -1,7 +1,7 @@
 -- -------------------------------------------------------
--- Laravel Bookstore 项目数据库初始化脚本
+-- Laravel Bookstore Project Database Initialization Script
 -- -------------------------------------------------------
--- 创建日期: 2025年
--- 编码: utf16_unicode_ci
--- 引擎: InnoDB
+-- Creation Date: 2025
+-- Character Set: utf16_unicode_ci
+-- Engine: InnoDB
 -- -------------------------------------------------------

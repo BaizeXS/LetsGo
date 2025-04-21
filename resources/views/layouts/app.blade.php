@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LetsGO - Travel Notes Sharing Platform</title>
-    <!-- Import jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <!-- Import Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- Import Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Import Tencent Map API -->
-    <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key={{ env('TENCENT_MAP_KEY', '') }}"></script>
-    <!-- Custom CSS -->
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    <!-- Add meta tag in head section for CSRF protection -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- External CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    
+    <!-- External JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2/dist/alpine.min.js" defer></script>
+    <script charset="utf-8" src="https://map.qq.com/api/js?v=2.exp&key={{ env('TENCENT_MAP_KEY', '') }}"></script>
+    
     @yield('styles')
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen">
@@ -158,23 +158,41 @@
         </div>
     </footer>
 
-    <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2/dist/alpine.min.js" defer></script>
+    <!-- Load app.js -->
     <script src="{{ asset('js/app.js') }}"></script>
+    
+    <!-- Map functionality -->
     <script>
-        // Map functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const mapModal = document.getElementById('map-modal');
-            const openMapBtn = document.getElementById('open-map-btn');
-            const closeMapBtn = document.getElementById('close-map-btn');
-            const mapElement = document.getElementById('tencent-map');
-            const searchInput = document.getElementById('map-search');
-            const searchBtn = document.getElementById('search-map-btn');
+            // DOM elements
+            const elements = {
+                mapModal: document.getElementById('map-modal'),
+                openMapBtn: document.getElementById('open-map-btn'),
+                closeMapBtn: document.getElementById('close-map-btn'),
+                mapElement: document.getElementById('tencent-map'),
+                searchInput: document.getElementById('map-search'),
+                searchBtn: document.getElementById('search-map-btn'),
+                mapPostsTitle: document.getElementById('map-posts-title'),
+                mapPostsCount: document.getElementById('map-posts-count'),
+                mapPostsPlaceholder: document.getElementById('map-posts-placeholder'),
+                mapPostsList: document.getElementById('map-posts-list')
+            };
             
+            // Map variables
             let map;
             let markers = [];
             let searchService;
             let geocoder;
+            
+            // Popular destinations data
+            const popularDestinations = [
+                { name: "Beijing Forbidden City", lat: 39.9163, lng: 116.3972 },
+                { name: "Shanghai Bund", lat: 31.2304, lng: 121.4912 },
+                { name: "Xi'an Terracotta Army", lat: 34.3841, lng: 109.2785 },
+                { name: "Guangzhou Tower", lat: 23.1066, lng: 113.3214 },
+                { name: "Shenzhen Window of the World", lat: 22.5347, lng: 113.9740 },
+                { name: "Hangzhou West Lake", lat: 30.2590, lng: 120.1388 }
+            ];
             
             // Initialize map
             function initMap() {
@@ -182,7 +200,7 @@
                 const defaultCenter = new qq.maps.LatLng(39.9042, 116.4074);
                 
                 // Create map instance
-                map = new qq.maps.Map(mapElement, {
+                map = new qq.maps.Map(elements.mapElement, {
                     center: defaultCenter,
                     zoom: 11,
                     mapTypeControl: true,
@@ -191,49 +209,48 @@
                     scaleControl: true
                 });
                 
-                // Create place search service
-                searchService = new qq.maps.SearchService({
-                    complete: function(results) {
-                        // Search completion callback
-                        if (results && results.detail.pois.length > 0) {
-                            const place = results.detail.pois[0];
-                            const location = {
-                                name: place.name,
-                                lat: place.latLng.lat,
-                                lng: place.latLng.lng
-                            };
-                            
-                            // Clear previous markers
-                            clearMarkers();
-                            
-                            // Move map to search result location
-                            map.setCenter(new qq.maps.LatLng(location.lat, location.lng));
-                            map.setZoom(14);
-                            
-                            // Add new marker
-                            addMarker(location);
-                        }
-                    }
-                });
+                // Initialize services
+                initServices();
                 
-                // Create geocoding service for coordinate and address conversion
-                geocoder = new qq.maps.Geocoder();
-                
-                // Add default popular tourist spot markers
+                // Add default markers
                 addDefaultMarkers();
             }
             
-            // Add popular tourist destination markers
-            function addDefaultMarkers() {
-                const popularDestinations = [
-                    { name: "Beijing Forbidden City", lat: 39.9163, lng: 116.3972 },
-                    { name: "Shanghai Bund", lat: 31.2304, lng: 121.4912 },
-                    { name: "Xi'an Terracotta Army", lat: 34.3841, lng: 109.2785 },
-                    { name: "Guangzhou Tower", lat: 23.1066, lng: 113.3214 },
-                    { name: "Shenzhen Window of the World", lat: 22.5347, lng: 113.9740 },
-                    { name: "Hangzhou West Lake", lat: 30.2590, lng: 120.1388 }
-                ];
+            // Initialize map services
+            function initServices() {
+                // Create place search service
+                searchService = new qq.maps.SearchService({
+                    complete: handleSearchComplete
+                });
                 
+                // Create geocoding service
+                geocoder = new qq.maps.Geocoder();
+            }
+            
+            // Handle search completion
+            function handleSearchComplete(results) {
+                if (results && results.detail.pois.length > 0) {
+                    const place = results.detail.pois[0];
+                    const location = {
+                        name: place.name,
+                        lat: place.latLng.lat,
+                        lng: place.latLng.lng
+                    };
+                    
+                    // Clear previous markers
+                    clearMarkers();
+                    
+                    // Move map to search result location
+                    map.setCenter(new qq.maps.LatLng(location.lat, location.lng));
+                    map.setZoom(14);
+                    
+                    // Add new marker
+                    addMarker(location);
+                }
+            }
+            
+            // Add default markers
+            function addDefaultMarkers() {
                 popularDestinations.forEach(destination => {
                     addMarker(destination);
                 });
@@ -256,15 +273,7 @@
                 });
                 
                 // Set info window content
-                const infoContent = document.createElement('div');
-                infoContent.innerHTML = `
-                    <div class="p-2" style="width: 200px;">
-                        <h3 style="font-weight: bold; margin-bottom: 5px;">${location.name}</h3>
-                        <p style="font-size: 12px; margin-bottom: 5px;">Explore travel notes about this destination</p>
-                        <a href="/search?query=${encodeURIComponent(location.name)}" style="color: #3b82f6; font-size: 12px; display: block; margin-top: 5px;">View related posts</a>
-                        <button id="load-posts-${location.lat}-${location.lng}" style="color: #eab308; font-size: 12px; display: block; margin-top: 5px; cursor: pointer; background: none; border: none; padding: 0; text-align: left;">Show travel posts</button>
-                    </div>
-                `;
+                const infoContent = createInfoContent(location);
                 
                 // Add marker click event
                 qq.maps.event.addListener(marker, 'click', function() {
@@ -272,7 +281,7 @@
                     info.setContent(infoContent);
                     info.setPosition(position);
                     
-                    // Add show travel notes button click event
+                    // Attach button event listeners
                     setTimeout(() => {
                         const loadPostsBtn = document.getElementById(`load-posts-${location.lat}-${location.lng}`);
                         if (loadPostsBtn) {
@@ -287,6 +296,20 @@
                 return marker;
             }
             
+            // Create info window content
+            function createInfoContent(location) {
+                const infoContent = document.createElement('div');
+                infoContent.innerHTML = `
+                    <div class="p-2" style="width: 200px;">
+                        <h3 style="font-weight: bold; margin-bottom: 5px;">${location.name}</h3>
+                        <p style="font-size: 12px; margin-bottom: 5px;">Explore travel notes about this destination</p>
+                        <a href="/search?query=${encodeURIComponent(location.name)}" style="color: #3b82f6; font-size: 12px; display: block; margin-top: 5px;">View related posts</a>
+                        <button id="load-posts-${location.lat}-${location.lng}" style="color: #eab308; font-size: 12px; display: block; margin-top: 5px; cursor: pointer; background: none; border: none; padding: 0; text-align: left;">Show travel posts</button>
+                    </div>
+                `;
+                return infoContent;
+            }
+            
             // Clear all markers
             function clearMarkers() {
                 markers.forEach(marker => {
@@ -297,125 +320,140 @@
             
             // Search place
             function searchPlace(query) {
-                // Use Tencent Map search service
-                searchService.search(query);
+                if (query.trim()) {
+                    searchService.search(query);
+                }
             }
             
             // Load travel notes for specified location
             function loadPostsForLocation(locationName) {
-                const mapPostsTitle = document.getElementById('map-posts-title');
-                const mapPostsCount = document.getElementById('map-posts-count');
-                const mapPostsPlaceholder = document.getElementById('map-posts-placeholder');
-                const mapPostsList = document.getElementById('map-posts-list');
-                
                 // Update title
-                mapPostsTitle.textContent = `Travel Posts for ${locationName}`;
+                elements.mapPostsTitle.textContent = `Travel Posts for ${locationName}`;
                 
                 // Show loading status
-                mapPostsPlaceholder.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full">
-                        <i class="fas fa-spinner fa-spin text-yellow-500 text-4xl mb-2"></i>
-                        <p>Loading travel posts for ${locationName}...</p>
-                    </div>
-                `;
-                mapPostsPlaceholder.classList.remove('hidden');
-                mapPostsList.classList.add('hidden');
+                showLoadingState(locationName);
                 
                 // Get travel notes for this location
                 fetch(`/api/posts/location?location=${encodeURIComponent(locationName)}`)
                     .then(response => response.json())
                     .then(posts => {
                         // Update note count
-                        mapPostsCount.textContent = `${posts.length} posts found`;
+                        elements.mapPostsCount.textContent = `${posts.length} posts found`;
                         
                         if (posts.length === 0) {
-                            // Show no notes message
-                            mapPostsPlaceholder.innerHTML = `
-                                <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <i class="fas fa-exclamation-circle text-4xl mb-2"></i>
-                                    <p>No travel posts found for ${locationName}</p>
-                                    <a href="/search?query=${encodeURIComponent(locationName)}" class="text-yellow-500 mt-2">Search all posts</a>
-                                </div>
-                            `;
-                            mapPostsPlaceholder.classList.remove('hidden');
-                            mapPostsList.classList.add('hidden');
+                            showEmptyState(locationName);
                         } else {
-                            // Generate notes list HTML
-                            mapPostsList.innerHTML = posts.map(post => `
-                                <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
-                                    <a href="/posts/${post.id}" class="block">
-                                        <div class="relative pb-48">
-                                            <img src="${post.cover_image}" class="absolute inset-0 h-full w-full object-cover" alt="${post.title}">
-                                        </div>
-                                        <div class="p-3">
-                                            <h4 class="font-medium text-gray-900 mb-1 truncate">${post.title}</h4>
-                                            <div class="flex justify-between text-xs text-gray-500">
-                                                <span><i class="far fa-eye mr-1"></i>${post.views}</span>
-                                                <span><i class="far fa-heart mr-1"></i>${post.likes}</span>
-                                            </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            `).join('');
-                            
-                            mapPostsPlaceholder.classList.add('hidden');
-                            mapPostsList.classList.remove('hidden');
+                            showPosts(posts);
                         }
                     })
                     .catch(error => {
                         console.error('Error fetching posts:', error);
-                        mapPostsPlaceholder.innerHTML = `
-                            <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                                <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-2"></i>
-                                <p>Error loading posts. Please try again later.</p>
-                            </div>
-                        `;
-                        mapPostsPlaceholder.classList.remove('hidden');
-                        mapPostsList.classList.add('hidden');
+                        showErrorState();
                     });
             }
             
-            // Open map modal
-            openMapBtn.addEventListener('click', function() {
-                mapModal.classList.remove('hidden');
-                // If map is not initialized, initialize
-                if (!map) {
-                    initMap();
-                }
-            });
+            // Show loading state
+            function showLoadingState(locationName) {
+                elements.mapPostsPlaceholder.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <i class="fas fa-spinner fa-spin text-yellow-500 text-4xl mb-2"></i>
+                        <p>Loading travel posts for ${locationName}...</p>
+                    </div>
+                `;
+                elements.mapPostsPlaceholder.classList.remove('hidden');
+                elements.mapPostsList.classList.add('hidden');
+            }
             
-            // Close map modal
-            closeMapBtn.addEventListener('click', function() {
-                mapModal.classList.add('hidden');
-            });
+            // Show empty state
+            function showEmptyState(locationName) {
+                elements.mapPostsPlaceholder.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                        <i class="fas fa-exclamation-circle text-4xl mb-2"></i>
+                        <p>No travel posts found for ${locationName}</p>
+                        <a href="/search?query=${encodeURIComponent(locationName)}" class="text-yellow-500 mt-2">Search all posts</a>
+                    </div>
+                `;
+                elements.mapPostsPlaceholder.classList.remove('hidden');
+                elements.mapPostsList.classList.add('hidden');
+            }
             
-            // Click outside modal area to close
-            mapModal.addEventListener('click', function(e) {
-                if (e.target === mapModal) {
-                    mapModal.classList.add('hidden');
-                }
-            });
+            // Show error state
+            function showErrorState() {
+                elements.mapPostsPlaceholder.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-2"></i>
+                        <p>Error loading posts. Please try again later.</p>
+                    </div>
+                `;
+                elements.mapPostsPlaceholder.classList.remove('hidden');
+                elements.mapPostsList.classList.add('hidden');
+            }
             
-            // Handle search button click
-            searchBtn.addEventListener('click', function() {
-                const query = searchInput.value.trim();
-                if (query) {
-                    searchPlace(query);
-                }
-            });
+            // Show posts
+            function showPosts(posts) {
+                elements.mapPostsList.innerHTML = posts.map(post => `
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
+                        <a href="/posts/${post.id}" class="block">
+                            <div class="relative pb-48">
+                                <img src="${post.cover_image}" class="absolute inset-0 h-full w-full object-cover" alt="${post.title}">
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-medium text-gray-900 mb-1 truncate">${post.title}</h4>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span><i class="far fa-eye mr-1"></i>${post.views}</span>
+                                    <span><i class="far fa-heart mr-1"></i>${post.likes}</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                `).join('');
+                
+                elements.mapPostsPlaceholder.classList.add('hidden');
+                elements.mapPostsList.classList.remove('hidden');
+            }
             
-            // Handle search box enter key
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const query = searchInput.value.trim();
-                    if (query) {
-                        searchPlace(query);
+            // Event listeners
+            function setupEventListeners() {
+                // Open map modal
+                elements.openMapBtn.addEventListener('click', function() {
+                    elements.mapModal.classList.remove('hidden');
+                    // Initialize map if needed
+                    if (!map) {
+                        initMap();
                     }
-                }
-            });
+                });
+                
+                // Close map modal
+                elements.closeMapBtn.addEventListener('click', function() {
+                    elements.mapModal.classList.add('hidden');
+                });
+                
+                // Click outside modal area to close
+                elements.mapModal.addEventListener('click', function(e) {
+                    if (e.target === elements.mapModal) {
+                        elements.mapModal.classList.add('hidden');
+                    }
+                });
+                
+                // Handle search button click
+                elements.searchBtn.addEventListener('click', function() {
+                    searchPlace(elements.searchInput.value);
+                });
+                
+                // Handle search box enter key
+                elements.searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchPlace(elements.searchInput.value);
+                    }
+                });
+            }
+            
+            // Initialize map functionality
+            setupEventListeners();
         });
     </script>
+    
     @yield('scripts')
 </body>
 </html> 

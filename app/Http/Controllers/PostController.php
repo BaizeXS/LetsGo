@@ -95,7 +95,7 @@ class PostController extends Controller
      */
     public function toggleFavorite($id)
     {
-        // 添加调试日志
+        // Add debug log
         \Log::info('Toggle favorite request received', [
             'id' => $id,
             'user' => auth()->user() ? auth()->user()->id : 'guest',
@@ -105,7 +105,7 @@ class PostController extends Controller
             'content_type' => request()->header('Content-Type')
         ]);
         
-        // 简化响应结构
+        // Simplify response structure
         $isFavorite = false;
         $success = true;
         $message = '';
@@ -174,46 +174,46 @@ class PostController extends Controller
      */
     public function generateRouteMap(Request $request)
     {
-        // 验证请求
+        // Validate request
         $validated = $request->validate([
             'postId' => 'required|integer',
             'content' => 'required|string',
         ]);
         
         try {
-            // 实际项目中，这里应该调用AI处理服务或第三方API
-            // 生成路线图，这里我们模拟返回一个预设的图片
+            // In an actual project, this should call an AI processing service or third-party API
+            // to generate a route map. Here we simulate returning a preset image
             
-            // 根据内容提取行程信息
+            // Extract itinerary information from content
             $itinerary = $this->extractItinerary($request->content);
             
-            // 模拟生成路线图的延迟
+            // Simulate delay for route map generation
             sleep(1);
             
-            // 使用腾讯地图静态图API
+            // Use Tencent Maps Static API
             $tencentMapKey = env('TENCENT_MAP_KEY', '');
             
-            // 不同路线的样本
+            // Sample routes for different destinations
             $sampleRoutes = [
-                // 日本行程
+                // Japan itinerary
                 [
-                    'center' => '35.68925,139.69234', // 东京
+                    'center' => '35.68925,139.69234', // Tokyo
                     'markers' => 'markers=color:blue|label:A|35.68925,139.69234&markers=color:blue|label:B|34.6937,135.5022&markers=color:blue|label:C|35.0116,135.7681',
                     'path' => 'color:0x0000ff50|weight:5|35.68925,139.69234;34.6937,135.5022;35.0116,135.7681',
                     'zoom' => '6',
                     'size' => '600*400'
                 ],
-                // 中国行程
+                // China itinerary
                 [
-                    'center' => '39.9042,116.4074', // 北京
+                    'center' => '39.9042,116.4074', // Beijing
                     'markers' => 'markers=color:blue|label:A|39.9042,116.4074&markers=color:blue|label:B|34.342,108.939&markers=color:blue|label:C|31.2304,121.4737',
                     'path' => 'color:0x0000ff50|weight:5|39.9042,116.4074;34.342,108.939;31.2304,121.4737',
                     'zoom' => '5',
                     'size' => '600*400'
                 ],
-                // 法国行程
+                // France itinerary
                 [
-                    'center' => '48.8566,2.3522', // 巴黎
+                    'center' => '48.8566,2.3522', // Paris
                     'markers' => 'markers=color:blue|label:A|48.8566,2.3522&markers=color:blue|label:B|45.764,4.8357&markers=color:blue|label:C|43.7102,7.2620',
                     'path' => 'color:0x0000ff50|weight:5|48.8566,2.3522;45.764,4.8357;43.7102,7.2620',
                     'zoom' => '6',
@@ -221,10 +221,10 @@ class PostController extends Controller
                 ]
             ];
             
-            // 随机选择一条路线
+            // Randomly select a route
             $selectedRoute = $sampleRoutes[array_rand($sampleRoutes)];
             
-            // 构造腾讯地图静态图URL
+            // Construct Tencent Maps Static API URL
             $mapUrl = sprintf(
                 'https://apis.map.qq.com/ws/staticmap/v2?key=%s&center=%s&%s&paths=%s&zoom=%s&size=%s',
                 $tencentMapKey,
@@ -253,23 +253,23 @@ class PostController extends Controller
      */
     private function extractItinerary($content)
     {
-        // 实际项目中，这里应该用NLP或其他AI技术分析文本
-        // 提取出行程信息，这里我们简单模拟
+        // In an actual project, this should use NLP or other AI technology to analyze the text
+        // and extract itinerary information. Here we simply simulate this process
         
-        // 假设我们能识别出这些模式：
+        // Assume we can identify these patterns:
         $dayRegex = '/Day\s*(\d+)[^\n]*/i';
         $locationRegex = '/(?:visited|went to|arrived at|stopped by|explored)\s+([^\.,:;\n]+)/i';
         
         $itinerary = [];
         
-        // 提取天数
+        // Extract days
         preg_match_all($dayRegex, $content, $dayMatches);
         if (!empty($dayMatches[0])) {
             foreach ($dayMatches[0] as $index => $dayMatch) {
                 $day = $dayMatches[1][$index];
                 $itinerary["Day {$day}"] = [];
                 
-                // 查找这个天数后面提到的地点
+                // Find locations mentioned after this day
                 preg_match_all($locationRegex, $content, $locationMatches);
                 if (!empty($locationMatches[1])) {
                     foreach ($locationMatches[1] as $location) {
@@ -279,7 +279,7 @@ class PostController extends Controller
             }
         }
         
-        // 如果没有提取到结构化信息，返回一些假数据
+        // If no structured information was extracted, return some dummy data
         if (empty($itinerary)) {
             $itinerary = [
                 'Day 1' => ['Airport', 'Hotel', 'Local Restaurant'],

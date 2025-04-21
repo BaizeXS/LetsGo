@@ -16,114 +16,28 @@ class HomeController extends Controller
         $activeCategory = $request->query('category', 'recommended');
         
         // Mock category data
-        $categories = [
-            ['name' => 'Recommended', 'slug' => 'recommended'],
-            ['name' => 'Latest', 'slug' => 'latest'],
-            ['name' => 'Popular', 'slug' => 'popular'],
-            ['name' => 'Domestic', 'slug' => 'domestic'],
-            ['name' => 'Overseas', 'slug' => 'overseas'],
-            ['name' => 'Nearby', 'slug' => 'nearby'],
-            ['name' => 'Special', 'slug' => 'special'],
-            ['name' => 'Independent', 'slug' => 'independent'],
-            ['name' => 'Homestay', 'slug' => 'homestay'],
-        ];
+        $categories = $this->getCategories();
         
         $posts = [];
-        $useMockData = true;
-        
-        // 检查数据库连接和配置
-        if (config('app.use_database', false)) {
-            try {
-                // 尝试连接数据库但不执行查询
-                \DB::connection()->getPdo();
-                $useMockData = false;
-            } catch (\Exception $e) {
-                // 连接失败，使用模拟数据
-                $useMockData = true;
-            }
-        }
+        $useMockData = $this->shouldUseMockData();
         
         if (!$useMockData) {
             try {
-                // 数据库连接成功，获取帖子
+                // Database connection successful, get posts
                 $posts = $this->getPostsFromDatabase($activeCategory);
             } catch (\Exception $e) {
-                // 查询失败，使用模拟数据
+                // Query failed, use mock data
                 $useMockData = true;
             }
         }
         
-        // 如果使用模拟数据
+        // If using mock data
         if ($useMockData) {
-            // 获取所有模拟帖子
-            $allPosts = $this->getDummyPosts();
-            
-            // 应用分类过滤
-            switch ($activeCategory) {
-                case 'latest':
-                    // 按创建日期排序（假设较新的帖子有较高的ID）
-                    usort($allPosts, function($a, $b) {
-                        return $b['id'] - $a['id'];
-                    });
-                    break;
-                case 'popular':
-                    // 按浏览量排序
-                    usort($allPosts, function($a, $b) {
-                        return $b['views'] - $a['views'];
-                    });
-                    break;
-                case 'domestic':
-                    // 筛选出国内的帖子
-                    $allPosts = array_filter($allPosts, function($post) {
-                        return stripos($post['title'], 'China') !== false || 
-                               stripos($post['title'], 'Yunnan') !== false || 
-                               stripos($post['title'], 'Xinjiang') !== false || 
-                               stripos($post['title'], 'Beijing') !== false ||
-                               stripos($post['title'], 'Tibet') !== false ||
-                               stripos($post['title'], 'Sanya') !== false;
-                    });
-                    $allPosts = array_values($allPosts);
-                    break;
-                case 'overseas':
-                    // 筛选出国外的帖子
-                    $allPosts = array_filter($allPosts, function($post) {
-                        return stripos($post['title'], 'China') === false && 
-                               stripos($post['title'], 'Yunnan') === false && 
-                               stripos($post['title'], 'Xinjiang') === false && 
-                               stripos($post['title'], 'Beijing') === false &&
-                               stripos($post['title'], 'Tibet') === false &&
-                               stripos($post['title'], 'Sanya') === false;
-                    });
-                    $allPosts = array_values($allPosts);
-                    break;
-                default:
-                    // 推荐排序（默认按点赞数）
-                    usort($allPosts, function($a, $b) {
-                        return $b['likes'] - $a['likes'];
-                    });
-                    break;
-            }
-            
-            $posts = $allPosts;
+            $posts = $this->filterPostsByCategory($this->getDummyPosts(), $activeCategory);
         }
         
-        // 获取用户收藏
-        $userFavorites = [];
-        if (auth()->check()) {
-            try {
-            $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
-            } catch (\Exception $e) {
-                // 如果获取收藏失败，忽略错误
-                $userFavorites = [];
-            }
-        } elseif (session()->has('mock_user')) {
-            $userFavorites = session()->get('user_favorites', []);
-        }
-        
-        // 标记收藏状态
-        foreach ($posts as &$post) {
-            $post['is_favorite'] = in_array($post['id'], $userFavorites);
-        }
+        // Mark user favorites
+        $posts = $this->markUserFavorites($posts);
         
         return view('home.index', [
             'activeCategory' => $activeCategory,
@@ -158,26 +72,211 @@ class HomeController extends Controller
         ->with('user')
         ->get()
         ->map(function($post) {
-            // Format post data for view
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'cover_image' => $post->cover_image,
-                'duration' => $post->duration,
-                'cost' => $post->cost ?? null,
-                'user' => [
-                    'name' => $post->user->name,
-                    'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
-                ],
-                'views' => $post->views,
-                'likes' => $post->likes,
-                'comments' => $post->comments_count,
-            ];
+            return $this->formatPostForView($post);
         })
         ->toArray();
         
-        // Mock category data for search page
-        $categories = [
+        return view('home.search', [
+            'query' => $query,
+            'posts' => $posts,
+            'categories' => $this->getCategories(),
+            'activeCategory' => 'search-results'
+        ]);
+    }
+    
+    /**
+     * Get posts by location
+     */
+    public function getPostsByLocation(Request $request)
+    {
+        $location = $request->input('location');
+        
+        if (empty($location)) {
+            return response()->json(['error' => 'Location parameter is required'], 400);
+        }
+        
+        $posts = [];
+        $useMockData = $this->shouldUseMockData();
+        
+        if (!$useMockData) {
+            try {
+                // Database connection successful, attempt query
+                $posts = Post::where('destination', 'like', "%{$location}%")
+                    ->with('user')
+                    ->limit(10)
+                    ->get()
+                    ->map(function($post) {
+                        return [
+                            'id' => $post->id,
+                            'title' => $post->title,
+                            'destination' => $post->destination,
+                            'cover_image' => $post->cover_image,
+                            'views' => $post->views,
+                            'likes' => $post->likes,
+                        ];
+                    })
+                    ->toArray();
+            } catch (\Exception $e) {
+                // Query failed, use mock data
+                $useMockData = true;
+            }
+        }
+        
+        // If using mock data
+        if ($useMockData) {
+            // Get all mock posts
+            $allPosts = $this->getDummyPosts();
+            
+            // Filter posts based on location
+            $filteredPosts = array_filter($allPosts, function($post) use ($location) {
+                return stripos($post['title'], $location) !== false ||
+                      (isset($post['destination']) && stripos($post['destination'], $location) !== false);
+            });
+            
+            $posts = array_values($filteredPosts);
+        }
+                
+        return response()->json($posts);
+    }
+
+    /**
+     * API method for searching posts via AJAX
+     */
+    public function apiSearch(Request $request)
+    {
+        // Get search query
+        $query = $request->input('query');
+
+        // If no query is provided, return empty array
+        if (empty($query)) {
+            return response()->json(['posts' => []]);
+        }
+
+        $posts = [];
+        $useMockData = $this->shouldUseMockData();
+
+        if (!$useMockData) {
+            try {
+                // Database connection successful, attempt query
+                // Use Post model's scopeSearch method
+                $posts = Post::search($query)
+                    ->with('user')
+                    ->limit(8)
+                    ->get()
+                    ->map(function($post) use ($query) {
+                        // Prepare excerpt content - try to find matching text around query
+                        $excerpt = $this->generateExcerpt($post->content ?? '', $query);
+                        
+                        // Format post data for view
+                        $formattedPost = $this->formatPostForView($post);
+                        $formattedPost['excerpt'] = $excerpt;
+                        
+                        return $formattedPost;
+                    })
+                    ->toArray();
+            } catch (\Exception $e) {
+                // Query failed, use mock data
+                $useMockData = true;
+                \Log::error('Database search failed: ' . $e->getMessage());
+            }
+        }
+
+        // If database connection or query failed, use mock data
+        if ($useMockData) {
+            // Get dummy posts
+            $allPosts = $this->getDummyPosts();
+
+            // Filter posts based on search term
+            $filteredPosts = array_filter($allPosts, function($post) use ($query) {
+                $query = strtolower($query);
+
+                // Check if title contains query
+                $titleMatch = strpos(strtolower($post['title']), $query) !== false;
+                
+                // Check if destination contains query
+                $destinationMatch = isset($post['destination']) && 
+                    strpos(strtolower($post['destination']), $query) !== false;
+                
+                // Check if content contains query
+                $contentMatch = isset($post['content']) && 
+                    strpos(strtolower($post['content']), $query) !== false;
+                
+                // Return true if any match found
+                return $titleMatch || $destinationMatch || $contentMatch;
+            });
+
+            $posts = array_values($filteredPosts);
+
+            // Add excerpts to mock data
+            foreach ($posts as &$post) {
+                // If no content, use title as part of content
+                if (!isset($post['content'])) {
+                    $post['content'] = "Travel notes about {$post['title']}. Amazing experience in {$post['destination']}.";
+                }
+                
+                $post['excerpt'] = $this->generateExcerpt($post['content'], $query);
+            }
+
+            // Limit to 8 results
+            $posts = array_slice($posts, 0, 8);
+        }
+
+        // Mark user favorites
+        $posts = $this->markUserFavorites($posts);
+
+        return response()->json(['posts' => $posts, 'query' => $query]);
+    }
+    
+    /**
+     * API method to get posts for infinite loading
+     */
+    public function getPosts(Request $request)
+    {
+        // Get params
+        $page = $request->input('page', 1);
+        $category = $request->input('category', 'recommended');
+        $limit = $request->input('limit', 8);
+        
+        $posts = [];
+        $useMockData = $this->shouldUseMockData();
+        
+        if (!$useMockData) {
+            try {
+                // Database connection successful, get posts
+                $posts = $this->getPostsFromDatabase($category, $page, $limit);
+            } catch (\Exception $e) {
+                // Query failed, use mock data
+                $useMockData = true;
+            }
+        }
+        
+        // If using mock data
+        if ($useMockData) {
+            // Get filtered posts by category
+            $allPosts = $this->filterPostsByCategory($this->getDummyPosts(), $category);
+            
+            // Apply pagination
+            $offset = ($page - 1) * $limit;
+            $posts = array_slice($allPosts, $offset, $limit);
+            
+            // If no more posts, return empty array
+            if (empty($posts)) {
+                return response()->json(['posts' => []]);
+            }
+        }
+        
+        // Mark user favorites
+        $posts = $this->markUserFavorites($posts);
+        
+        return response()->json(['posts' => $posts]);
+    }
+    
+    /**
+     * Get standard categories list
+     */
+    private function getCategories()
+    {
+        return [
             ['name' => 'Recommended', 'slug' => 'recommended'],
             ['name' => 'Latest', 'slug' => 'latest'],
             ['name' => 'Popular', 'slug' => 'popular'],
@@ -188,91 +287,103 @@ class HomeController extends Controller
             ['name' => 'Independent', 'slug' => 'independent'],
             ['name' => 'Homestay', 'slug' => 'homestay'],
         ];
-        
-        return view('home.search', [
-            'query' => $query,
-            'posts' => $posts,
-            'categories' => $categories,
-            'activeCategory' => 'search-results'
-        ]);
     }
     
     /**
-     * Get posts by category
+     * Check if mock data should be used
      */
-    private function getPostsByCategory($category, $page = 1, $limit = 12)
+    private function shouldUseMockData()
     {
-        // Check if we should use the database
-        try {
-            if (config('app.use_database', false) && \DB::connection()->getPdo()) {
-            // Get posts from database based on category
-            $query = Post::with('user');
-            
-            switch ($category) {
-                case 'latest':
-                    $query->latest();
-                    break;
-                case 'popular':
-                    $query->orderBy('views', 'desc');
-                    break;
-                case 'domestic':
-                    $query->where('destination', 'like', '%China%');
-                    break;
-                case 'overseas':
-                    $query->where('destination', 'not like', '%China%');
-                    break;
-                // Add more categories as needed
-                default:
-                    // Default sorting for recommended
-                    $query->orderBy('likes', 'desc');
-                    break;
+        if (config('app.use_database', false)) {
+            try {
+                // Try to connect to database without executing a query
+                \DB::connection()->getPdo();
+                return false;
+            } catch (\Exception $e) {
+                // Connection failed, use mock data
+                return true;
             }
-                
-                // Apply pagination
-                $query->skip(($page - 1) * $limit)->take($limit);
-            
-            // Get posts and format for view
-                return $query->get()->map(function($post) {
-                return [
-                    'id' => $post->id,
-                    'title' => $post->title,
-                    'cover_image' => $post->cover_image,
-                    'duration' => $post->duration,
-                    'cost' => $post->cost ?? null,
-                    'user' => [
-                        'name' => $post->user->name,
-                        'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
-                    ],
-                    'views' => $post->views,
-                    'likes' => $post->likes,
-                    'comments' => $post->comments_count,
-                ];
-            })->toArray();
-            }
-        } catch (\Exception $e) {
-            // Exception handling will be done in the caller method
+        }
+        return true;
+    }
+    
+    /**
+     * Format a post for view
+     */
+    private function formatPostForView($post)
+    {
+        return [
+            'id' => $post->id,
+            'title' => $post->title,
+            'cover_image' => $post->cover_image,
+            'duration' => $post->duration,
+            'cost' => $post->cost ?? null,
+            'destination' => $post->destination ?? null,
+            'user' => [
+                'name' => $post->user->name,
+                'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
+            ],
+            'views' => $post->views,
+            'likes' => $post->likes,
+            'comments' => $post->comments_count,
+        ];
+    }
+    
+    /**
+     * Generate excerpt from content based on search query
+     */
+    private function generateExcerpt($content, $query)
+    {
+        if (empty($content)) {
+            return '';
         }
         
-        // Fallback to mock data
-        $allPosts = $this->getDummyPosts();
+        // Find first match position in content
+        $pos = stripos($content, $query);
+        if ($pos !== false) {
+            // Get text snippet around match
+            $start = max(0, $pos - 50);
+            $length = strlen($query) + 100; // Query term + 50 chars before and after
+            $excerpt = substr($content, $start, $length);
+            
+            // Add ellipsis if excerpt doesn't start at beginning
+            if ($start > 0) {
+                $excerpt = '...' . $excerpt;
+            }
+            
+            // Add ellipsis if excerpt doesn't end at content end
+            if ($start + $length < strlen($content)) {
+                $excerpt .= '...';
+            }
+        } else {
+            // If no match found, use beginning of content
+            $excerpt = substr($content, 0, 100) . '...';
+        }
         
-        // Apply category filtering to mock data
+        return $excerpt;
+    }
+    
+    /**
+     * Filter and sort posts by category
+     */
+    private function filterPostsByCategory($posts, $category)
+    {
         switch ($category) {
             case 'latest':
-                // Sort by mock date (assuming newer posts have higher IDs)
-                usort($allPosts, function($a, $b) {
+                // Sort by creation date (assuming newer posts have higher IDs)
+                usort($posts, function($a, $b) {
                     return $b['id'] - $a['id'];
                 });
                 break;
             case 'popular':
                 // Sort by views
-                usort($allPosts, function($a, $b) {
+                usort($posts, function($a, $b) {
                     return $b['views'] - $a['views'];
                 });
                 break;
             case 'domestic':
-                // Filter to only show posts with China in the title
-                $allPosts = array_filter($allPosts, function($post) {
+                // Filter for domestic posts
+                $posts = array_filter($posts, function($post) {
                     return stripos($post['title'], 'China') !== false || 
                            stripos($post['title'], 'Yunnan') !== false || 
                            stripos($post['title'], 'Xinjiang') !== false || 
@@ -280,11 +391,11 @@ class HomeController extends Controller
                            stripos($post['title'], 'Tibet') !== false ||
                            stripos($post['title'], 'Sanya') !== false;
                 });
-                $allPosts = array_values($allPosts);
+                $posts = array_values($posts);
                 break;
             case 'overseas':
-                // Filter to only show posts without China in the title
-                $allPosts = array_filter($allPosts, function($post) {
+                // Filter for international posts
+                $posts = array_filter($posts, function($post) {
                     return stripos($post['title'], 'China') === false && 
                            stripos($post['title'], 'Yunnan') === false && 
                            stripos($post['title'], 'Xinjiang') === false && 
@@ -292,21 +403,80 @@ class HomeController extends Controller
                            stripos($post['title'], 'Tibet') === false &&
                            stripos($post['title'], 'Sanya') === false;
                 });
-                $allPosts = array_values($allPosts);
+                $posts = array_values($posts);
                 break;
             default:
                 // Default sorting for recommended (by likes)
-                usort($allPosts, function($a, $b) {
+                usort($posts, function($a, $b) {
                     return $b['likes'] - $a['likes'];
                 });
                 break;
         }
         
-        // Apply pagination to mock data
-        $offset = ($page - 1) * $limit;
-        $posts = array_slice($allPosts, $offset, $limit);
+        return $posts;
+    }
+    
+    /**
+     * Mark user favorites in post list
+     */
+    private function markUserFavorites($posts)
+    {
+        // Get user favorites
+        $userFavorites = [];
+        if (auth()->check()) {
+            try {
+                $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
+            } catch (\Exception $e) {
+                // If getting favorites fails, ignore the error
+                $userFavorites = [];
+            }
+        } elseif (session()->has('mock_user')) {
+            $userFavorites = session()->get('user_favorites', []);
+        }
+        
+        // Mark favorites
+        foreach ($posts as &$post) {
+            $post['is_favorite'] = in_array($post['id'], $userFavorites);
+        }
         
         return $posts;
+    }
+    
+    /**
+     * Get posts from database with category and pagination
+     */
+    private function getPostsFromDatabase($category, $page = 1, $limit = 12)
+    {
+        // Create query builder
+        $query = Post::with('user');
+        
+        // Apply different query conditions based on category
+        switch ($category) {
+            case 'latest':
+                $query->latest();
+                break;
+            case 'popular':
+                $query->orderBy('views', 'desc');
+                break;
+            case 'domestic':
+                $query->where('destination', 'like', '%China%');
+                break;
+            case 'overseas':
+                $query->where('destination', 'not like', '%China%');
+                break;
+            default:
+                // Recommended sorting
+                $query->orderBy('likes', 'desc');
+                break;
+        }
+        
+        // Apply pagination
+        $query->skip(($page - 1) * $limit)->take($limit);
+        
+        // Get and format data
+        return $query->get()->map(function($post) {
+            return $this->formatPostForView($post);
+        })->toArray();
     }
     
     /**
@@ -314,14 +484,6 @@ class HomeController extends Controller
      */
     private function getDummyPosts()
     {
-        // Get user favorites
-        $userFavorites = [];
-        if (auth()->check()) {
-            $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
-        } elseif (session()->has('mock_user')) {
-            $userFavorites = session()->get('user_favorites', []);
-        }
-        
         $posts = [
             [
                 'id' => 1,
@@ -440,417 +602,6 @@ class HomeController extends Controller
             ]
         ];
         
-        // Mark favorites
-        foreach ($posts as &$post) {
-            $post['is_favorite'] = in_array($post['id'], $userFavorites);
-        }
-        
         return $posts;
-    }
-
-    /**
-     * Get posts by location
-     */
-    public function getPostsByLocation(Request $request)
-    {
-        $location = $request->input('location');
-        
-        if (empty($location)) {
-            return response()->json(['error' => 'Location parameter is required'], 400);
-        }
-        
-        $posts = [];
-        $useMockData = true;
-        
-        // 检查数据库连接和配置
-        if (config('app.use_database', false)) {
-            try {
-                // 尝试连接数据库但不执行查询
-                \DB::connection()->getPdo();
-                $useMockData = false;
-            } catch (\Exception $e) {
-                // 连接失败，使用模拟数据
-                $useMockData = true;
-            }
-        }
-        
-        if (!$useMockData) {
-            try {
-                // 数据库连接成功，尝试查询
-            $posts = Post::where('destination', 'like', "%{$location}%")
-                ->with('user')
-                ->limit(10)
-                ->get()
-                ->map(function($post) {
-                    return [
-                        'id' => $post->id,
-                        'title' => $post->title,
-                        'destination' => $post->destination,
-                        'cover_image' => $post->cover_image,
-                        'views' => $post->views,
-                        'likes' => $post->likes,
-                    ];
-                    })
-                    ->toArray();
-            } catch (\Exception $e) {
-                // 查询失败，使用模拟数据
-                $useMockData = true;
-            }
-        }
-        
-        // 如果使用模拟数据
-        if ($useMockData) {
-            // 获取所有模拟帖子
-            $allPosts = $this->getDummyPosts();
-            
-            // 筛选基于位置的帖子
-            $filteredPosts = array_filter($allPosts, function($post) use ($location) {
-                return stripos($post['title'], $location) !== false ||
-                      (isset($post['destination']) && stripos($post['destination'], $location) !== false);
-            });
-            
-            $posts = array_values($filteredPosts);
-        }
-                
-            return response()->json($posts);
-    }
-
-    /**
-     * API method for searching posts via AJAX
-     */
-    public function apiSearch(Request $request)
-    {
-        // Get search query
-        $query = $request->input('query');
-
-        // If no query is provided, return empty array
-        if (empty($query)) {
-            return response()->json(['posts' => []]);
-        }
-
-        $posts = [];
-        $useMockData = true;
-
-        // 检查数据库连接和配置，只有确认可以连接时才尝试数据库查询
-        if (config('app.use_database', false)) {
-            try {
-                // 尝试连接数据库但不执行查询
-                \DB::connection()->getPdo();   
-                $useMockData = false;
-            } catch (\Exception $e) {
-                // 连接失败，使用模拟数据
-                $useMockData = true;
-            }
-        }
-
-        if (!$useMockData) {
-            try {
-                // 数据库连接成功，尝试查询
-                // 使用Post模型中的scopeSearch方法
-                $posts = Post::search($query)
-                    ->with('user')
-                    ->limit(8)
-                    ->get()
-                    ->map(function($post) use ($query) {
-                        // 准备摘要内容 - 尝试在内容中找到匹配项周围的文本
-                        $excerpt = '';
-                        if (isset($post->content)) {
-                            // 找到内容中第一个匹配查询的位置
-                            $pos = stripos($post->content, $query);
-                            if ($pos !== false) {
-                                // 获取匹配周围的文本片段
-                                $start = max(0, $pos - 50);
-                                $length = strlen($query) + 100; // 查询词 + 前后各50个字符
-                                $excerpt = substr($post->content, $start, $length);
-                                
-                                // 如果摘要不是从头开始，添加省略号
-                                if ($start > 0) {
-                                    $excerpt = '...' . $excerpt;
-                                }
-                                
-                                // 如果摘要不是到内容结束，添加省略号
-                                if ($start + $length < strlen($post->content)) {
-                                    $excerpt .= '...';
-                                }
-                            } else {
-                                // 如果在内容中找不到匹配项，使用内容开头作为摘要
-                                $excerpt = substr($post->content, 0, 100) . '...';
-                            }
-                        }
-                        
-                        // Format post data for view
-                        return [
-                            'id' => $post->id,
-                            'title' => $post->title,
-                            'excerpt' => $excerpt,
-                            'cover_image' => $post->cover_image,
-                            'duration' => $post->duration,
-                            'cost' => $post->cost ?? null,
-                            'destination' => $post->destination,
-                            'user' => [
-                                'name' => $post->user->name,
-                                'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
-                            ],
-                            'views' => $post->views,
-                            'likes' => $post->likes,
-                            'comments' => $post->comments_count,
-                        ];
-                    })
-                    ->toArray();
-            } catch (\Exception $e) {
-                // 查询失败，使用模拟数据
-                $useMockData = true;
-                \Log::error('Database search failed: ' . $e->getMessage());
-            }
-        }
-
-        // 如果数据库连接或查询失败，使用模拟数据
-        if ($useMockData) {
-            // Get dummy posts
-            $allPosts = $this->getDummyPosts();
-
-            // Filter posts based on search term
-            $filteredPosts = array_filter($allPosts, function($post) use ($query) {
-                $query = strtolower($query);
-
-                // 检查标题中是否包含查询词
-                $titleMatch = strpos(strtolower($post['title']), $query) !== false;
-                
-                // 检查目的地中是否包含查询词
-                $destinationMatch = isset($post['destination']) && 
-                    strpos(strtolower($post['destination']), $query) !== false;
-                
-                // 检查内容中是否包含查询词
-                $contentMatch = isset($post['content']) && 
-                    strpos(strtolower($post['content']), $query) !== false;
-                
-                // 如果任何一个匹配，返回true
-                return $titleMatch || $destinationMatch || $contentMatch;
-            });
-
-            $posts = array_values($filteredPosts);
-
-            // 为模拟数据添加摘要
-            foreach ($posts as &$post) {
-                // 如果没有内容，使用标题作为内容的一部分
-                if (!isset($post['content'])) {
-                    $post['content'] = "Travel notes about {$post['title']}. Amazing experience in {$post['destination']}.";
-                }
-                
-                // 找到内容中第一个匹配查询的位置
-                $pos = stripos($post['content'], $query);
-                if ($pos !== false) {
-                    // 获取匹配周围的文本片段
-                    $start = max(0, $pos - 50);
-                    $length = strlen($query) + 100; // 查询词 + 前后各50个字符
-                    $excerpt = substr($post['content'], $start, $length);
-                    
-                    // 如果摘要不是从头开始，添加省略号
-                    if ($start > 0) {
-                        $excerpt = '...' . $excerpt;
-                    }
-                    
-                    // 如果摘要不是到内容结束，添加省略号
-                    if ($start + $length < strlen($post['content'])) {
-                        $excerpt .= '...';
-                    }
-                } else {
-                    // 如果在内容中找不到匹配项，使用内容开头作为摘要
-                    $excerpt = substr($post['content'], 0, 100) . '...';
-                }
-                
-                $post['excerpt'] = $excerpt;
-            }
-
-            // Limit to 8 results
-            $posts = array_slice($posts, 0, 8);
-        }
-
-        // Get user favorites
-        $userFavorites = [];
-        if (auth()->check()) {
-            try {
-                $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
-            } catch (\Exception $e) {
-                // 如果获取收藏失败，忽略错误继续执行
-                $userFavorites = []; 
-            }
-        } elseif (session()->has('mock_user')) {
-            $userFavorites = session()->get('user_favorites', []);
-        }
-
-        // Mark favorites
-        foreach ($posts as &$post) {
-            $post['is_favorite'] = in_array($post['id'], $userFavorites);
-        }
-
-        return response()->json(['posts' => $posts, 'query' => $query]);
-    }
-    
-    /**
-     * API method to get posts for infinite loading
-     */
-    public function getPosts(Request $request)
-    {
-        // Get params
-        $page = $request->input('page', 1);
-        $category = $request->input('category', 'recommended');
-        $limit = $request->input('limit', 8);
-        
-        $posts = [];
-        $useMockData = true;
-        
-        // 检查数据库连接和配置
-        if (config('app.use_database', false)) {
-            try {
-                // 尝试连接数据库但不执行查询
-                \DB::connection()->getPdo();
-                $useMockData = false;
-            } catch (\Exception $e) {
-                // 连接失败，使用模拟数据
-                $useMockData = true;
-            }
-        }
-        
-        if (!$useMockData) {
-            try {
-                // 数据库连接成功，获取帖子
-                $posts = $this->getPostsFromDatabase($category, $page, $limit);
-            } catch (\Exception $e) {
-                // 查询失败，使用模拟数据
-                $useMockData = true;
-            }
-        }
-        
-        // 如果使用模拟数据
-        if ($useMockData) {
-            // 获取所有模拟帖子
-            $allPosts = $this->getDummyPosts();
-            
-            // 应用分类过滤
-            switch ($category) {
-                case 'latest':
-                    // 按创建日期排序（假设较新的帖子有较高的ID）
-                    usort($allPosts, function($a, $b) {
-                        return $b['id'] - $a['id'];
-                    });
-                    break;
-                case 'popular':
-                    // 按浏览量排序
-                    usort($allPosts, function($a, $b) {
-                        return $b['views'] - $a['views'];
-                    });
-                    break;
-                case 'domestic':
-                    // 筛选出国内的帖子
-                    $allPosts = array_filter($allPosts, function($post) {
-                        return stripos($post['title'], 'China') !== false || 
-                               stripos($post['title'], 'Yunnan') !== false || 
-                               stripos($post['title'], 'Xinjiang') !== false || 
-                               stripos($post['title'], 'Beijing') !== false ||
-                               stripos($post['title'], 'Tibet') !== false ||
-                               stripos($post['title'], 'Sanya') !== false;
-                    });
-                    $allPosts = array_values($allPosts);
-                    break;
-                case 'overseas':
-                    // 筛选出国外的帖子
-                    $allPosts = array_filter($allPosts, function($post) {
-                        return stripos($post['title'], 'China') === false && 
-                               stripos($post['title'], 'Yunnan') === false && 
-                               stripos($post['title'], 'Xinjiang') === false && 
-                               stripos($post['title'], 'Beijing') === false &&
-                               stripos($post['title'], 'Tibet') === false &&
-                               stripos($post['title'], 'Sanya') === false;
-                    });
-                    $allPosts = array_values($allPosts);
-                    break;
-                default:
-                    // 推荐排序（默认按点赞数）
-                    usort($allPosts, function($a, $b) {
-                        return $b['likes'] - $a['likes'];
-                    });
-                    break;
-            }
-            
-            // 应用分页
-            $offset = ($page - 1) * $limit;
-            $posts = array_slice($allPosts, $offset, $limit);
-            
-            // 如果没有更多帖子，返回空数组
-            if (empty($posts)) {
-                return response()->json(['posts' => []]);
-            }
-        }
-        
-        // 获取用户收藏
-        $userFavorites = [];
-        if (auth()->check()) {
-            try {
-                $userFavorites = auth()->user()->favorites()->pluck('post_id')->toArray();
-            } catch (\Exception $e) {
-                // 如果获取收藏失败，忽略错误
-                $userFavorites = [];
-            }
-        } elseif (session()->has('mock_user')) {
-            $userFavorites = session()->get('user_favorites', []);
-        }
-        
-        // 标记收藏状态
-        foreach ($posts as &$post) {
-            $post['is_favorite'] = in_array($post['id'], $userFavorites);
-        }
-        
-        return response()->json(['posts' => $posts]);
-    }
-    
-    /**
-     * 从数据库获取帖子（带分类和分页）
-     */
-    private function getPostsFromDatabase($category, $page = 1, $limit = 12)
-    {
-        // 创建查询构建器
-        $query = Post::with('user');
-        
-        // 根据分类应用不同的查询条件
-        switch ($category) {
-            case 'latest':
-                $query->latest();
-                break;
-            case 'popular':
-                $query->orderBy('views', 'desc');
-                break;
-            case 'domestic':
-                $query->where('destination', 'like', '%China%');
-                break;
-            case 'overseas':
-                $query->where('destination', 'not like', '%China%');
-                break;
-            default:
-                // 推荐排序
-                $query->orderBy('likes', 'desc');
-                break;
-        }
-        
-        // 应用分页
-        $query->skip(($page - 1) * $limit)->take($limit);
-        
-        // 获取并格式化数据
-        return $query->get()->map(function($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'cover_image' => $post->cover_image,
-                'duration' => $post->duration,
-                'cost' => $post->cost ?? null,
-                'user' => [
-                    'name' => $post->user->name,
-                    'avatar' => $post->user->profile_photo_url ?? 'https://randomuser.me/api/portraits/men/1.jpg'
-                ],
-                'views' => $post->views,
-                'likes' => $post->likes,
-                'comments' => $post->comments_count,
-            ];
-        })->toArray();
     }
 } 
