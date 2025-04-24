@@ -349,8 +349,5 @@ Temporary Items
 !.gitsubmodules
 
 .env
-.env.example
 
 data/
-
-LetsGo/
