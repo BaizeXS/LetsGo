@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -53,7 +54,7 @@ class User extends Authenticatable
             'pinned_posts' => 'array',
         ];
     }
-    
+
     /**
      * Get user's posts
      */
@@ -61,7 +62,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class);
     }
-    
+
     /**
      * Get user's favorite posts
      */
@@ -69,7 +70,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Post::class, 'favorites')->withTimestamps();
     }
-    
+
     /**
      * Get user's followers
      */
@@ -77,12 +78,20 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id')->withTimestamps();
     }
-    
+
     /**
      * Get users that the user is following
      */
     public function following()
     {
         return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')->withTimestamps();
+    }
+
+    /**
+     * Get all chat conversations for the user.
+     */
+    public function chatConversations(): HasMany
+    {
+        return $this->hasMany(ChatConversation::class);
     }
 }

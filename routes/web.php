@@ -6,7 +6,8 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CommentController;
-
+use App\Http\Controllers\HotelSubscriptionController;
+use App\Http\Controllers\ChatController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -19,7 +20,7 @@ use App\Http\Controllers\CommentController;
 */
 
 // Test route - directly return content
-Route::get('/test', function() {
+Route::get('/test', function () {
     return '<h1>Test route is working</h1>';
 });
 
@@ -57,20 +58,20 @@ Route::middleware(['mock.auth'])->group(function () {
     // Create new post
     Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
-    
+
     // Profile editing
     Route::get('/profile/edit', [UserController::class, 'edit'])->name('user.edit');
     Route::put('/profile', [UserController::class, 'update'])->name('user.update');
     Route::post('/posts/{id}/pin', [UserController::class, 'togglePinPost'])->name('posts.pin');
-    
+
     // My favorites
     Route::get('/favorites', [UserController::class, 'favorites'])->name('user.favorites');
-    
+
     // Following system
     Route::post('/users/{id}/follow', [UserController::class, 'toggleFollow'])->name('users.follow');
     Route::get('/followers', [UserController::class, 'followers'])->name('user.followers');
     Route::get('/following', [UserController::class, 'following'])->name('user.following');
-    
+
     // My posts route
     Route::get('user/my/posts', [UserController::class, 'myPosts'])->name('user.my.posts');
 });
@@ -91,3 +92,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Route::get('user/my/posts', [UserController::class, 'myPosts'])->name('user.my.posts');
 // Route::get('user/{username}/following', [UserController::class, 'following'])->name('user.following');
 // Route::get('user/following', [UserController::class, 'following'])->name('user.my.following');
+
+// Chat routes
+Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+Route::post('/chat/upload-image', [ChatController::class, 'uploadImage'])->name('chat.upload-image');
+
+// Hotel Subscription
+Route::get('/hotels/subscription', [HotelSubscriptionController::class, 'index'])->name('hotels.subscription');
