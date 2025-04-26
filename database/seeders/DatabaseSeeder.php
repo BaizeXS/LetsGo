@@ -18,10 +18,10 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-        
+
         // Create additional users
         User::factory(10)->create();
-        
+
         // Run the post seeder
         $this->call([
             PostSeeder::class,

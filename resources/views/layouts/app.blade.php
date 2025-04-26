@@ -11,6 +11,7 @@
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="{{ asset('css/travel-utility.css') }}">
 
   <!-- External JavaScript -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -154,9 +155,9 @@
         </a>
         @endif
 
-        <a href="{{ route('hotels.subscription') }}" class="flex flex-col items-center {{ Route::currentRouteName() == 'hotels.subscription' ? 'text-red-500' : 'text-gray-500' }}">
+        <a href="{{ route('hotels.index') }}" class="flex flex-col items-center {{ request()->routeIs('hotels.index*') ? 'text-red-500' : 'text-gray-500' }}">
           <i class="fas fa-hotel text-xl"></i>
-          <span class="text-xs mt-1">Hotels</span>
+          <span class="text-xs mt-1">Hotel</span>
         </a>
 
         <a href="{{ $isAuthenticated ? url('/favorites') : route('login') }}" class="flex flex-col items-center {{ Route::currentRouteName() == 'user.favorites' ? 'text-red-500' : 'text-gray-500' }}">

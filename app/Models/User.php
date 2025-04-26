@@ -86,12 +86,4 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')->withTimestamps();
     }
-
-    /**
-     * Get all chat conversations for the user.
-     */
-    public function chatConversations(): HasMany
-    {
-        return $this->hasMany(ChatConversation::class);
-    }
 }

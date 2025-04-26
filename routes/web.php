@@ -6,8 +6,8 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CommentController;
-use App\Http\Controllers\HotelSubscriptionController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\HotelController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -98,5 +98,8 @@ Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
 Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
 Route::post('/chat/upload-image', [ChatController::class, 'uploadImage'])->name('chat.upload-image');
 
-// Hotel Subscription
-Route::get('/hotels/subscription', [HotelSubscriptionController::class, 'index'])->name('hotels.subscription');
+// Hotel routes
+Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
+Route::get('/hotels/search', [HotelController::class, 'search'])->name('hotels.search');
+Route::get('/hotels/{id}', [HotelController::class, 'show'])->name('hotels.show');
+Route::post('/hotels/{id}/subscribe', [HotelController::class, 'subscribe'])->name('hotels.subscribe');
