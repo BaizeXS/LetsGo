@@ -13,42 +13,38 @@ class HotelController extends Controller
      */
     public function index(Request $request)
     {
-        // Default city is now Hong Kong
+        // Default city if none provided
         $city = $request->query('city', 'Hong Kong');
 
-        // Default dates (today and tomorrow)
         $today = now()->format('Y-m-d');
         $tomorrow = now()->addDay()->format('Y-m-d');
 
-        // Get query parameters including filters
+        // Get search parameters or defaults
         $checkin = $request->query('checkin', $today);
         $checkout = $request->query('checkout', $tomorrow);
         $guests = $request->query('guests', 1);
         $rooms = $request->query('rooms', 1);
-        $hotelClass = $request->query('hotel_class');
-        $keywords = $request->query('keywords');
+        $hotelClass = $request->query('hotel_class'); // Star rating filter
+        $keywords = $request->query('keywords'); // Keyword filter
 
-        // Get weather data
         $weather = $this->getWeatherData($city);
+        $allHotelsInCity = $this->getHotels($city); // Using mock data
 
-        // Get ALL mock hotel data for the selected city first
-        $allHotelsInCity = $this->getHotels($city);
-
-        // Apply filters
-        $filteredHotels = collect($allHotelsInCity) // Use Laravel Collection for easier filtering
+        // Apply filters to the hotel collection
+        $filteredHotels = collect($allHotelsInCity)
             ->when($hotelClass, function ($collection, $hotelClass) {
-                // Filter by stars if hotel_class is provided
+                // Filter by star rating
                 return $collection->where('stars', $hotelClass);
             })
             ->when($keywords, function ($collection, $keywords) {
-                // Filter by keywords (case-insensitive search in name and tags)
-                $keywords = strtolower($keywords);
-                return $collection->filter(function ($hotel) use ($keywords) {
-                    $inName = stripos(strtolower($hotel['name']), $keywords) !== false;
+                // Filter by keywords in name or tags (case-insensitive)
+                $keywordsLower = strtolower($keywords);
+                return $collection->filter(function ($hotel) use ($keywordsLower) {
+                    $inName = isset($hotel['name']) && stripos(strtolower($hotel['name']), $keywordsLower) !== false;
                     $inTags = false;
                     if (isset($hotel['tags']) && is_array($hotel['tags'])) {
                         foreach ($hotel['tags'] as $tag) {
-                            if (stripos(strtolower($tag), $keywords) !== false) {
+                            if (stripos(strtolower($tag), $keywordsLower) !== false) {
                                 $inTags = true;
                                 break;
                             }
@@ -57,15 +53,12 @@ class HotelController extends Controller
                     return $inName || $inTags;
                 });
             })
-            ->values() // Reset keys after filtering
+            ->values() // Reset array keys
             ->all();
 
-        // Get popular cities data
         $popularCities = $this->getPopularCities();
 
-        // Note: Pagination would typically be applied here if using DB queries.
-        // For mock data, we're passing the filtered array directly.
-
+        // Pass data to the view
         return view('hotels.index', [
             'city' => $city,
             'checkin' => $checkin,
@@ -79,40 +72,37 @@ class HotelController extends Controller
     }
 
     /**
-     * Search redirect (keeps URL clean with GET parameters)
+     * Handle the search form submission and redirect with query parameters.
      */
     public function search(Request $request)
     {
         $city = $request->input('city');
-        $checkin = $request->input('checkin');
-        $checkout = $request->input('checkout');
-        $guests = $request->input('guests', 1);
-        $rooms = $request->input('rooms', 1);
 
-        // If no city is provided, redirect to the homepage
+        // If no city is provided, redirect back to the main hotel page
         if (empty($city)) {
             return redirect()->route('hotels.index');
         }
 
-        // Redirect to the index page with query parameters
-        return redirect()->route('hotels.index', [
-            'city' => $city,
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $guests,
-            'rooms' => $rooms,
-            'hotel_class' => $request->input('hotel_class'),
-            'keywords' => $request->input('keywords'),
-        ]);
+        // Redirect to the index page with all relevant search parameters
+        return redirect()->route('hotels.index', $request->only([
+            'city',
+            'checkin',
+            'checkout',
+            'guests',
+            'rooms',
+            'hotel_class',
+            'keywords'
+        ]));
     }
 
     /**
-     * Get weather data from WeatherAPI
+     * Get weather data from WeatherAPI.
      */
     private function getWeatherData($city)
     {
         $apiKey = config('services.weatherapi.key');
 
+        // Check if API key is configured
         if (!$apiKey) {
             Log::error('WeatherAPI key not configured.');
             return [
@@ -127,47 +117,53 @@ class HotelController extends Controller
         $apiUrl = "http://api.weatherapi.com/v1/current.json?key={$apiKey}&q=" . urlencode($city) . "&aqi=no";
 
         try {
-            $response = Http::timeout(5)->get($apiUrl);
+            $response = Http::timeout(5)->get($apiUrl); // 5-second timeout
+
             if ($response->successful()) {
                 $data = $response->json();
                 if (isset($data['current'])) {
-                    $iconUrl = $data['current']['condition']['icon'];
+                    $currentWeather = $data['current'];
+                    $iconUrl = $currentWeather['condition']['icon'];
+                    // Ensure icon URL starts with https:
                     if (strpos($iconUrl, '//') === 0) {
                         $iconUrl = 'https:' . $iconUrl;
                     }
                     return [
-                        'temp'      => $data['current']['temp_c'],
-                        'condition' => $data['current']['condition']['text'],
-                        'humidity'  => $data['current']['humidity'] . '%',
-                        'wind'      => $data['current']['wind_kph'] . ' km/h',
+                        'temp'      => $currentWeather['temp_c'],
+                        'condition' => $currentWeather['condition']['text'],
+                        'humidity'  => $currentWeather['humidity'] . '%',
+                        'wind'      => $currentWeather['wind_kph'] . ' km/h',
                         'icon'      => $iconUrl
                     ];
                 } else {
-                    Log::warning('WeatherAPI response missing current data for city: ' . $city, ['response' => $data]);
-                    return null;
+                    Log::warning('WeatherAPI response missing current weather data.', ['city' => $city, 'response' => $data]);
+                    return null; // Indicate data could not be retrieved
                 }
             } else {
-                Log::error('WeatherAPI request failed for city: ' . $city, [
+                // Log API request failure
+                Log::error('WeatherAPI request failed.', [
+                    'city' => $city,
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
                 return null;
             }
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('WeatherAPI connection error for city: ' . $city . ' - ' . $e->getMessage());
+            Log::error('WeatherAPI connection error.', ['city' => $city, 'error' => $e->getMessage()]);
             return null;
         } catch (\Exception $e) {
-            Log::error('Error fetching weather data for city: ' . $city . ' - ' . $e->getMessage());
+            Log::error('Generic error fetching weather data.', ['city' => $city, 'error' => $e->getMessage()]);
             return null;
         }
     }
 
     /**
-     * Get mock hotel data.
+     * Retrieve mock hotel data for a given city.
+     * In a real application, this would query a database.
      */
     private function getHotels($city)
     {
-        // Use unique IDs across all cities
+        // Mock data structure: City => Array of Hotels
         $allHotels = [
             'Hong Kong' => [
                 ['id' => 1, 'name' => 'The Peninsula Hong Kong', 'rating' => 4.9, 'stars' => 5, 'distance' => '1 km from Tsim Sha Tsui', 'price' => 3500, 'image' => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.0.3&q=80&w=400', 'tags' => ['Luxury', 'Harbour View', 'Spa']],
@@ -196,69 +192,91 @@ class HotelController extends Controller
                 ['id' => 304, 'name' => 'Nanjing Youth Hostel', 'rating' => 4.1, 'stars' => 2, 'distance' => '1.5 km from Confucius Temple', 'price' => 150, 'image' => 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.0.3&q=80&w=400', 'tags' => ['Hostel', 'Budget', 'Fuzimiao Area']],
                 ['id' => 305, 'name' => 'Holiday Inn Nanjing Aqua City', 'rating' => 4.3, 'stars' => 3, 'distance' => '0.2 km from Aqua City Mall', 'price' => 600, 'image' => 'https://images.unsplash.com/photo-1590073242678-70ee3fc28e8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.0.3&q=80&w=400', 'tags' => ['Shopping', 'Family Friendly', 'Convenient']],
             ],
+            // Add more cities and hotels as needed
         ];
-        return $allHotels[$city] ?? []; // Return empty if city not found
+        // Return hotels for the requested city, or an empty array if city not found
+        return $allHotels[$city] ?? [];
     }
 
     /**
-     * Hotel details page.
+     * Display details for a specific hotel.
+     * Currently redirects back to index as details are shown in a modal.
      */
     public function show($id)
     {
-        $hotel = $this->getHotelById($id);
-        if (!$hotel) {
-            // Error message is already in English
-            return redirect()->route('hotels.index')->with('error', 'Hotel not found.');
-        }
-        // Assuming 'hotels.show' view exists
-        return view('hotels.show', [
-            'hotel' => $hotel
-        ]);
+
+        return redirect()->route('hotels.index')->with('info', 'Please use the "View Details" button.');
     }
 
     /**
-     * Subscribe to hotel price changes.
+     * Handle a simulated booking request submission.
      */
-    public function subscribe(Request $request, $id)
+    public function requestBooking(Request $request)
     {
+        // Validate the incoming request data
         $validated = $request->validate([
-            'email' => 'required|email',
-            'price_threshold' => 'nullable|numeric'
+            'hotel_id' => 'required|integer',
+            'checkin' => 'required|date|after_or_equal:today',
+            'checkout' => 'required|date|after:checkin',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'rooms' => 'required|integer|min:1',
+            'guests' => 'required|integer|min:1',
         ]);
-        // TODO: Implement actual subscription saving logic here
 
-        // Mock success response is already in English
+        $hotel = $this->getHotelById($validated['hotel_id']);
+
+        // Check if the hotel exists in our mock data
+        if (!$hotel) {
+            return response()->json(['success' => false, 'message' => 'Hotel not found.'], 404);
+        }
+
+        // --- Placeholder for actual booking/email logic ---
+        // In a real app, you would save the booking request, send emails, etc.
+        Log::info('Simulated Booking Request Received:', [
+            'hotel_name' => $hotel['name'],
+            'booking_details' => $validated
+        ]);
+        // --- End Placeholder ---
+
+        // Return a success response (simulated)
         return response()->json([
             'success' => true,
-            'message' => 'Subscription successful! We will notify you of price changes.'
+            'message' => 'Booking request received! We will contact you shortly.'
         ]);
     }
 
     /**
-     * Get hotel details by ID from the mock data.
+     * Get hotel details by ID from the combined mock data.
      */
     private function getHotelById($id)
     {
-        // Ensure all cities with mock data are included here
-        $allCityKeys = ['Hong Kong', 'Beijing', 'Shanghai', 'Nanjing'];
+        $allCityKeys = ['Hong Kong', 'Beijing', 'Shanghai', 'Nanjing']; // Cities with mock data
         $allHotels = [];
+        // Combine hotels from all known cities
         foreach ($allCityKeys as $cityKey) {
-            $allHotels = array_merge($allHotels, $this->getHotels($cityKey));
+            $hotelsInCity = $this->getHotels($cityKey);
+            if (!empty($hotelsInCity)) {
+                $allHotels = array_merge($allHotels, $hotelsInCity);
+            }
         }
 
+        // Find the hotel with the matching ID
         foreach ($allHotels as $hotel) {
             if ($hotel['id'] == $id) {
                 return $hotel;
             }
         }
+        // Return null if no hotel is found
         return null;
     }
 
     /**
-     * Get popular cities data.
+     * Get lists of popular domestic and international cities.
      */
     private function getPopularCities()
     {
+        // Example list of popular domestic cities
         $domestic = [
             'Beijing',
             'Shanghai',
@@ -283,35 +301,85 @@ class HotelController extends Controller
             'Wuhan',
             'Zhengzhou'
         ];
-        $domestic = array_unique($domestic);
+        // Ensure uniqueness and re-index array
+        $domestic = array_values(array_unique($domestic));
+
+        // Example list of popular international cities
+        $international = [
+            'Seoul',
+            'Bangkok',
+            'Phuket',
+            'Tokyo',
+            'Singapore',
+            'Osaka',
+            'Jeju',
+            'Bali',
+            'Chiang Mai',
+            'Kota Kinabalu',
+            'Kyoto',
+            'Kuala Lumpur',
+            'Pattaya',
+            'Okinawa',
+            'Los Angeles',
+            'Koh Samui',
+            'Paris',
+            'Krabi',
+            'Las Vegas',
+            'London',
+            'New York',
+            'Nha Trang',
+            'Sydney'
+        ];
 
         return [
-            'domestic' => array_values($domestic),
-            'international' => [
-                'Seoul',
-                'Bangkok',
-                'Phuket',
-                'Tokyo',
-                'Singapore',
-                'Osaka',
-                'Jeju',
-                'Bali',
-                'Chiang Mai',
-                'Kota Kinabalu',
-                'Kyoto',
-                'Kuala Lumpur',
-                'Pattaya',
-                'Okinawa',
-                'Los Angeles',
-                'Koh Samui',
-                'Paris',
-                'Krabi',
-                'Las Vegas',
-                'London',
-                'New York',
-                'Nha Trang',
-                'Sydney'
-            ]
+            'domestic' => $domestic,
+            'international' => $international
         ];
+    }
+
+    /**
+     * Get hotel details as JSON for API/modal use.
+     */
+    public function getDetailsJson($id)
+    {
+        $hotel = $this->getHotelById($id);
+
+        if (!$hotel) {
+            // Return 404 if hotel not found
+            return response()->json(['error' => 'Hotel not found.'], 404);
+        }
+        // Return hotel details as JSON
+        return response()->json($hotel);
+    }
+
+    /**
+     * Handle a simulated subscription request.
+     */
+    public function subscribe(Request $request, $id)
+    {
+        // Validate the request data
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'price_threshold' => 'nullable|numeric|min:0' // Allow optional price threshold
+        ]);
+
+        $hotel = $this->getHotelById($id);
+        if (!$hotel) {
+            return response()->json(['success' => false, 'message' => 'Cannot subscribe: Hotel not found.'], 404);
+        }
+
+        // --- Placeholder for actual subscription saving logic ---
+        Log::info('Simulated Subscription Request:', [
+            'hotel_name' => $hotel['name'],
+            'email' => $validated['email'],
+            'price_threshold' => $validated['price_threshold'] ?? 'None'
+        ]);
+        // --- End Placeholder ---
+
+        // Return a success response (simulated)
+        return response()->json([
+            'success' => true,
+            'message' => 'Subscription successful! We will notify you of price changes.'
+        ]);
     }
 }
